@@ -6,9 +6,9 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Data
-@Table(name = "final")
+@Table(name = "industries")
 @Entity
-public class IndustriesDto {
+public class Industry {
     
     @Id
     private long id;
