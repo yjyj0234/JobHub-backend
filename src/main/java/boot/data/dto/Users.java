@@ -18,7 +18,7 @@ import lombok.Data;
 @Data
 @Table(name = "users")
 @Entity
-public class UserDto {
+public class Users {
 	
 	   public enum UserType {
 	        JOBSEEKER,

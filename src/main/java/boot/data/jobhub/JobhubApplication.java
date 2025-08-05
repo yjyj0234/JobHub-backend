@@ -7,9 +7,10 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@EnableJpaRepositories("boot.data.*")
+@EnableJpaRepositories("boot.data.*") 
 @EntityScan("boot.data.*")
 @ComponentScan("boot.data.*")
+
 public class JobhubApplication {
 
 	public static void main(String[] args) {
