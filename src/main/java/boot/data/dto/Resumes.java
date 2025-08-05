@@ -15,12 +15,16 @@ import lombok.Data;
 @Data
 @Entity
 public class Resumes {
+	
+	//자바에선 long 타입이 mysql BIGINT에 대응
 	 	@Id
 	    @GeneratedValue(strategy = GenerationType.IDENTITY)
 	    @Comment("이력서 고유 ID")
 	    private Long id;
 
 	    // 'user_id' 컬럼과 매핑되는 관계 설정
+	 	//FetchType.EAGER (즉시 로딩) : 메인 엔티티 조회 시 즉시 로딩(성능 저하)
+	 	//FetchType.LAZY (지연 로딩) : 연관된 객체 사용 시점에 로딩(성능 최적화에 유리)
 	    @ManyToOne(fetch = FetchType.LAZY)
 	    @JoinColumn(name = "user_id", nullable = false)
 	    @Comment("사용자 ID")
@@ -41,6 +45,5 @@ public class Resumes {
 	    @Column(name = "completion_rate", nullable = false)
 	    @Comment("완성도 (%)")
 	    private short completionRate = 0;
-	
 	
 }
