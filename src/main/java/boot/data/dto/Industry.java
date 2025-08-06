@@ -11,7 +11,7 @@ import lombok.Data;
 public class Industry {
     
     @Id
-    private long id;
+    private Long id;
 
     
     private String name;
