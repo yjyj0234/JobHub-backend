@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-JobhubApplication<JobHub-backend>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "boot.data.jobhub.JobhubApplication",
+      "projectName": "JobHub-backend",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
