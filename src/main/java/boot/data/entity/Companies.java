@@ -1,6 +1,5 @@
 package boot.data.entity;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -9,7 +8,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
@@ -42,10 +40,6 @@ public class Companies {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_size_id")
     private CompanySize companySize;
-
-    // ⭐ 추가: CompanyDetails와의 양방향 일대일 관계
-    @OneToOne(mappedBy = "company", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private CompanyDetails companyDetails;
     
     // 설립년도
     private Short foundedYear;
