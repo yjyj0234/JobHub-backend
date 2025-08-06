@@ -1,4 +1,4 @@
-package boot.data.dto;
+package boot.data.entity;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -13,12 +13,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Table(name = "users")
 @Entity
-public class UserDto {
+public class Users {
+	//카멜케이스로 언더바 없이 붙여쓰면 알아서 언더바 있는걸로 인식해줌
 	
 	   public enum UserType {
 	        JOBSEEKER,
@@ -33,17 +36,22 @@ public class UserDto {
 	private String email;
 	
 	
-	private String password_hash;
+	private String passwordHash;
 	
 	@Enumerated(EnumType.STRING)
 	@Column(name ="user_type",nullable = false)
 	@Comment("사용자 유형(JOBSEEKER/COMPANY_HR/ADMIN)")
 	private UserType userType;
 	
-	private boolean is_Active=true;
+	@Column(name = "is_Active")
+	private boolean isActive=true;
 	
-	private Timestamp email_verfied_at;
-	private Timestamp last_login_at;
+	@Column(name = "email_verfied_at")
+	private Timestamp emailVerifiedAt;
 	
-	private LocalDateTime created_At=LocalDateTime.now();
+	
+	private Timestamp lastLoginAt;
+	
+	private LocalDateTime createdAt=LocalDateTime.now();
+	
 }
