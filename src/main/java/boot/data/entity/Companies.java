@@ -25,7 +25,7 @@ public class Companies {
     private String name; // 회사 이름
 
     @Column(name = "business_number", nullable = false, unique = true)
-    private String business_number; // 사업자등록번호 (고유값)
+    private String businessNumber; // 사업자등록번호 (고유값)
 
     // industry_id (외래키)와 연결
     // 다대일 관계: 여러 회사가 하나의 업종(Industry)에 속할 수 있음
@@ -42,10 +42,10 @@ public class Companies {
     private CompanySize companySize;
 
     // 설립년도
-    private Short founded_year;
+    private Short foundedYear;
 
     // 인증 여부 (true / false)
     @Column(nullable = false)
-    private boolean is_verified;
+    private boolean isVerified;
     
 }
