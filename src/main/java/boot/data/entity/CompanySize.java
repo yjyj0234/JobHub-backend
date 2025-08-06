@@ -16,7 +16,7 @@ public class CompanySize {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) //autoIncrement 인경우
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false,length = 100)
     private String label; //규모 이름 (스타트업, 중소기업, 대기업 등)
