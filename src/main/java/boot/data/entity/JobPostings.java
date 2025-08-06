@@ -76,7 +76,7 @@ public class JobPostings {
     private Users createdBy;
     
     @Column(name = "created_at", nullable =  false, updatable = false)
-    private LocalDateTime createAt=LocalDateTime.now();
+    private LocalDateTime createdAt=LocalDateTime.now();
     
     @Column(name = "updated_at",nullable = false)
     @Comment("업데이트 일시")

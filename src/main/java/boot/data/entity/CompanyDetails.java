@@ -15,6 +15,7 @@ import lombok.Data;
 @Data
 @Table(name = "company_details")
 public class CompanyDetails {
+	//Lob = Large Object (대용량 객체 저장용)
 	
 	@Id
 	@Column(name = "company_id")
