@@ -1,20 +1,25 @@
 server:
- port: 8080
- servlet:
-   session:
+  port: 8080
+  servlet:
+    session:
       timeout: 90m
 #mysql_setting
 spring:
- datasource:
-   driver-class-name: com.mysql.cj.jdbc.Driver
-   url: jdbc:mysql://finalproject.c3m0eoo0uhk9.ap-northeast-2.rds.amazonaws.com:3306/final?serverTimezone=Asia/Seoul
-   username: tkddyd04
-   password: Tkddyd04!
-#jpa_setting
- jpa:
-   hibernate:
-     ddl-auto: update
-   generate-ddl: true
-   show-sql: true
-   database: mysql
-   database-platform: org.hibernate.dialect.MySQLDialect
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://finalproject.c3m0eoo0uhk9.ap-northeast-2.rds.amazonaws.com:3306/final?serverTimezone=Asia/Seoul
+    username: tkddyd04
+    password: Tkddyd04!
+  #jpa_setting
+  jpa:
+    hibernate:
+      ddl-auto: update
+    generate-ddl: true
+    show-sql: true
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQLDialect
+  #jwt
+  jwt:
+    secret: 123456789012345678901234567890123456789
+    expiration: 86400000 # 1 day in milliseconds
+
