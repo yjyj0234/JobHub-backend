@@ -15,6 +15,7 @@ import lombok.Data;
 @Data
 @Table(name = "company_details")
 public class CompanyDetails {
+	//Lob = Large Object (대용량 객체 저장용)
 	
 	@Id
 	private Long company_id;
@@ -35,6 +36,7 @@ public class CompanyDetails {
 	
     @Lob
 	private String mission;
+    
     @Lob
 	private String culture;
 	
