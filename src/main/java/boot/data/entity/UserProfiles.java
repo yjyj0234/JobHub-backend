@@ -45,7 +45,7 @@ public class UserProfiles {
 	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "location_region_id")
-	private Integer locationRegionId;
+	private Regions region;
 	
 
 	
