@@ -1,5 +1,6 @@
 server:
   port: 8080
+  address: 0.0.0.0 # 외부에서 접근 가능하게 열기 추가(이우형)
   servlet:
     session:
       timeout: 90m

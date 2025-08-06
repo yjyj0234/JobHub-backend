@@ -1,5 +1,6 @@
 package boot.data.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -8,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
@@ -19,13 +21,13 @@ public class Companies {
 
     @Id // 기본 키(PK)
     @GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO_INCREMENT
-    private long id;
+    private Long id;
     
     @Column(nullable = false) // null 허용 안 함
     private String name; // 회사 이름
 
     @Column(name = "business_number", nullable = false, unique = true)
-    private String business_number; // 사업자등록번호 (고유값)
+    private String businessNumber; // 사업자등록번호 (고유값)
 
     // industry_id (외래키)와 연결
     // 다대일 관계: 여러 회사가 하나의 업종(Industry)에 속할 수 있음
@@ -41,11 +43,15 @@ public class Companies {
     @JoinColumn(name = "company_size_id")
     private CompanySize companySize;
 
+    // ⭐ 추가: CompanyDetails와의 양방향 일대일 관계
+    @OneToOne(mappedBy = "company", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private CompanyDetails companyDetails;
+    
     // 설립년도
-    private Short founded_year;
+    private Short foundedYear;
 
     // 인증 여부 (true / false)
     @Column(nullable = false)
-    private boolean is_verified;
+    private boolean isVerified;
     
 }

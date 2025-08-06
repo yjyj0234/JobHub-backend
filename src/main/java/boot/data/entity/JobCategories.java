@@ -14,7 +14,7 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "job_categories")
-public class Job_Categories {
+public class JobCategories {
 	
 	@Id
 	@Comment("직무 코드")
@@ -27,7 +27,7 @@ public class Job_Categories {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "parent_id")
 	@Comment("상위 직무 분류")
-	private Job_Categories parent;
+	private JobCategories parent;
 	
 	@Column(nullable = false)
 	private Short level;
