@@ -1,4 +1,4 @@
-package boot.data.dto;
+package boot.data.entity;
 
 import java.time.LocalDateTime;
 
