@@ -18,32 +18,36 @@ public class CompanyDetails {
 	//Lob = Large Object (대용량 객체 저장용)
 	
 	@Id
-	private Long company_id;
+	@Column(name = "company_id")
+	private Long companyId; // camelCase로 변경
 	
 	@OneToOne(fetch = FetchType.LAZY)
 	@MapsId
 	@JoinColumn(name = "company_id")
 	private Companies company;
 	
-    @Column(name = "website_url", length = 255)
-	private String website_url;
+	@Column(name = "website_url", length = 255)
+	private String websiteUrl; // camelCase로 변경
 	
-    @Lob
-	private String logo_url;
+	@Lob
+	@Column(name = "logo_url", columnDefinition = "TEXT")
+	private String logoUrl; // camelCase로 변경
 	
-    @Lob
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String description;
 	
-    @Lob
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String mission;
-    
-    @Lob
+	
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String culture;
 	
-    //JSON 필드는 String 으로 처리
-    @Lob
+	// JSON 필드를 String으로 처리 (MySQL JSON 컬럼)
+	// 복리후생 데이터 예시:
+	@Lob
+	@Column(columnDefinition = "JSON")
 	private String benefits;
-	
-	
-
 }
