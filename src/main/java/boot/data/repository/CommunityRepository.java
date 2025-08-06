@@ -7,5 +7,5 @@ import boot.data.entity.CommunityPosts;
 
 @Service
 public interface CommunityRepository extends JpaRepository<CommunityPosts, Long>{
-    public void insertPost();
+   
 }
