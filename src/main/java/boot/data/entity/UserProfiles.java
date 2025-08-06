@@ -20,7 +20,7 @@ import lombok.Data;
 public class UserProfiles {
 	
 	@Id	
-	private Long user_id;
+	private Long userId;
 	
     // Users 테이블의 기본 키를 외래 키로 사용하고, 엔티티 간 1:1 관계 설정
 	@OneToOne(fetch = FetchType.LAZY)
@@ -32,10 +32,10 @@ public class UserProfiles {
 	@Column(nullable = false,length = 100)
 	private String name;
 	private String phone;
-	private Short birth_Year;
+	private Short birthYear;
 	
 	@Lob
-	private String profile_image_url;
+	private String profileImageUrl;
 	
 	@Column(length = 255)
 	private String headline;
@@ -45,7 +45,7 @@ public class UserProfiles {
 	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "location_region_id")
-	private Integer location_region_id;
+	private Integer locationRegionId;
 	
 
 	
