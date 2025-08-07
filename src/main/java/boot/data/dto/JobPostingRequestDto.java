@@ -1,6 +1,13 @@
 package boot.data.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import boot.data.entity.JobPostingConditions.EducationLevel;
+import boot.data.entity.JobPostingConditions.EmploymentType;
+import boot.data.entity.JobPostingConditions.ExperienceLevel;
+import boot.data.entity.JobPostingConditions.SalaryType;
+import boot.data.type.CloseType;
+import boot.data.type.PostingStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,13 +15,6 @@ import java.time.LocalDateTime;
 
 // Enum 타입들은 여기에 직접 정의하거나, 별도의 파일로 관리할 수 있습니다.
 // 간결성을 위해 여기에 정의합니다.
-enum EmploymentType { FULL_TIME, PART_TIME, CONTRACT, INTERN, FREELANCE }
-enum ExperienceLevel { ENTRY, JUNIOR, MID, SENIOR, LEAD, EXECUTIVE }
-enum EducationLevel { ANY, HIGH_SCHOOL, COLLEGE, UNIVERSITY, MASTER, PHD }
-enum SalaryType { ANNUAL, MONTHLY, HOURLY, NEGOTIABLE, UNDISCLOSED }
-enum PostingStatus { DRAFT, OPEN, CLOSED, EXPIRED }
-enum CloseType { DEADLINE, UNTIL_FILLED, CONTINUOUS, PERIODIC }
-
 
 /**
  * 채용 공고 생성을 위한 단일 요청 DTO
@@ -23,11 +23,12 @@ enum CloseType { DEADLINE, UNTIL_FILLED, CONTINUOUS, PERIODIC }
 @Getter
 @Setter
 public class JobPostingRequestDto {
-
+	
     // --- JobPostings 관련 필드 ---
     private String title;
     private PostingStatus status;
     private CloseType closeType;
+    
     @JsonProperty("is_remote")
     private boolean isRemote;
     private LocalDateTime openDate;
