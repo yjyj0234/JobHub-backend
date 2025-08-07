@@ -19,7 +19,7 @@ import lombok.Data;
 @Table(name = "user_profiles")
 public class UserProfiles {
 	
-	@Id	
+	@Id
 	private Long userId;
 	
     // Users 테이블의 기본 키를 외래 키로 사용하고, 엔티티 간 1:1 관계 설정
