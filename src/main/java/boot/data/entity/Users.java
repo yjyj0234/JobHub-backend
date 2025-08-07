@@ -24,7 +24,6 @@ import lombok.Setter;
 public class Users {
 	//카멜케이스로 언더바 없이 붙여쓰면 알아서 언더바 있는걸로 인식해줌
 	
-	  
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
