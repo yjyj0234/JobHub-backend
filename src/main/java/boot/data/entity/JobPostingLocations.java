@@ -1,4 +1,4 @@
-// src/main/java/boot/data/entity/JobPostingLocations.java
+// 다대다 관계 중간 테이블
 package boot.data.entity;
 
 import jakarta.persistence.*;
