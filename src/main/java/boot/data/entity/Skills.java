@@ -28,5 +28,5 @@ public class Skills {
     
     @Column(name = "is_verified", nullable = false)
     @Comment("검증 여부")
-    private boolean isverified=false;
+    private boolean isVerified=false;
 }
