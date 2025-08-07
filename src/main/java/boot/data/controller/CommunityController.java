@@ -1,6 +1,5 @@
 package boot.data.controller;
 
-import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -24,6 +23,6 @@ public class CommunityController {
     @PostMapping("/addpost")
     public void insertPost(@RequestBody CommunityPosts posts)
     {
-        service.insertPost(posts);
+       
     }
 }

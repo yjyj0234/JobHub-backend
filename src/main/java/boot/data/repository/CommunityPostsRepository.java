@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import boot.data.entity.CommunityPosts;
 
 @Repository
-public interface CommunityRepository extends JpaRepository<CommunityPosts, Long>{
+public interface CommunityPostsRepository extends JpaRepository<CommunityPosts, Long>{
    
 }
