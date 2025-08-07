@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class JobSearchService {
     
-    private final JobPostingRepository jobPostingRepository;
-    private final SearchKeywordRepository searchKeywordRepository;
+    private final JobPostingsRepository jobPostingRepository;
+    private final SearchKeywords searchKeywordRepository;
     
     /**
      * 통합 검색 메서드
