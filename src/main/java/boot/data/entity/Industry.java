@@ -17,7 +17,10 @@ public class Industry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 57edee5464c214cc2db76410429f5c7aa53bd218
     @Column(nullable = false)
     private String name;
 }
