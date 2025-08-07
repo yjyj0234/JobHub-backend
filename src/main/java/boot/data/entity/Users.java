@@ -24,9 +24,9 @@ public class Users {
 	//카멜케이스로 언더바 없이 붙여쓰면 알아서 언더바 있는걸로 인식해줌
 	
 	   public enum UserType {
-	        JOBSEEKER,
-	        COMPANY_HR,
-	        ADMIN
+	        user,
+	        company,
+	        admin
 	    }
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
