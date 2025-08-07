@@ -37,7 +37,7 @@ public class Users {
 	
 	@Enumerated(EnumType.STRING)
 	@Column(name ="user_type",nullable = false)
-	@Comment("사용자 유형(JOBSEEKER/COMPANY_HR/ADMIN)")
+	@Comment("사용자 유형(user/company/admin)")
 	private UserType userType;
 	
 	@Column(name = "is_Active")
