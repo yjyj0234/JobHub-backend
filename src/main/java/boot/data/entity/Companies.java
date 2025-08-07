@@ -62,9 +62,8 @@ public class Companies {
      * LAZY로 설정하여 필요할 때만 조회
      */
     @OneToOne(mappedBy = "company", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @Comment("회사 상세 정보")
     private CompanyDetails companyDetails;
-    
+     
     /**
      * 회사의 모든 채용공고 (1:N 관계)
      * 조회 시 사용 주의 (성능 이슈 가능)
