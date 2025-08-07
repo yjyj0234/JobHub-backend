@@ -19,7 +19,7 @@ public interface JobPostingSearchRepository extends JpaRepository<JobPostings,Lo
     //채용공고 상세조회 (연관 엔티티 한번에 조회)
     //N+1 문제 해결을 위한 Fetch Join 사용
 
-    @Query("select distinct jp from jpbPostings jp left join fetch jp.company c left join fetch c.companyDetails cd left join fetch c.industry left join fetch c.companySize where jp.id = :id and jp.status = 'OPEN' ")
+    @Query("select distinct jp from JobPostings jp left join fetch jp.company c left join fetch c.companyDetails cd left join fetch c.industry left join fetch c.companySize where jp.id = :id and jp.status = 'OPEN' ")
     Optional<JobPostings> findByIdWithDetails(@Param("id") Long id);
 
     //키워드 검색(제목,회사명,통합검색필드) , 대소문자 구분없이 검색 가능

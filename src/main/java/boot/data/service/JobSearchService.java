@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class JobSearchService {
     
-    private final JobPostingsRepository jobPostingRepository;
-    private final SearchKeywords searchKeywordRepository;
+    private final JobPostingSearchRepository jobPostingSearchRepository;
+    private final SearchKeywordRepository searchKeywordRepository;
     
     /**
      * 통합 검색 메서드
@@ -49,19 +49,19 @@ public class JobSearchService {
         // 검색 조건에 따른 분기
         if (hasOnlyKeyword(request)) {
             // 키워드만 있는 경우
-            result = jobPostingRepository.searchByKeyword(request.getKeyword(), pageRequest);
+            result = jobPostingSearchRepository.searchByKeyword(request.getKeyword(), pageRequest);
             // 검색 키워드 통계 업데이트 (비동기)
             updateSearchKeyword(request.getKeyword());
         } else if (hasFilters(request)) {
             // 필터 조건이 있는 경우
-            result = jobPostingRepository.searchWithFilters(
+            result = jobPostingSearchRepository.searchWithFilters(
                 request.getRegionIds(),
                 request.getCategoryIds(),
                 pageRequest
             );
         } else {
             // 조건 없는 경우 (전체 조회)
-            result = jobPostingRepository.findAll(pageRequest);
+            result = jobPostingSearchRepository.findAll(pageRequest);
         }
         
         // Entity -> DTO 변환
