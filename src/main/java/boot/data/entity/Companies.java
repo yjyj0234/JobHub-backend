@@ -1,5 +1,12 @@
 package boot.data.entity;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hibernate.annotations.Comment;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -8,6 +15,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
@@ -47,5 +56,35 @@ public class Companies {
     // 인증 여부 (true / false)
     @Column(nullable = false)
     private boolean isVerified;
+
+    /**
+     * 회사 상세 정보 (1:1 관계)
+     * LAZY로 설정하여 필요할 때만 조회
+     */
+    @OneToOne(mappedBy = "company", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @Comment("회사 상세 정보")
+    private CompanyDetails companyDetails;
+    
+    /**
+     * 회사의 모든 채용공고 (1:N 관계)
+     * 조회 시 사용 주의 (성능 이슈 가능)
+     */
+    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
+    @Comment("회사의 채용공고 목록")
+    private List<JobPostings> jobPostings = new ArrayList<>();
+    
+    /**
+     * 회사 평점 (리뷰 기반) - 계산된 필드
+     */
+    @Column(name = "avg_rating", precision = 2, scale = 1)
+    @Comment("평균 평점 (1.0 ~ 5.0)")
+    private BigDecimal avgRating;
+    
+    /**
+     * 활성 채용공고 수 (캐시용)
+     */
+    @Column(name = "active_job_count")
+    @Comment("현재 진행중인 채용공고 수")
+    private Integer activeJobCount = 0;
     
 }
