@@ -11,9 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import boot.data.entity.UserProfiles;
 import boot.data.entity.Users;
 import boot.data.jwt.JwtTokenProvider;
-import boot.data.repository.UserRepository;
+import boot.data.repository.UsersRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -23,13 +24,13 @@ import lombok.Setter;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserRepository usersRepository;
+    private final UsersRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginDto) {
-        Users user = usersRepository.findByEmail(loginDto.getEmail()).orElse(null);
+        Users user = userRepository.findByEmail(loginDto.getEmail()).orElse(null);
         if (user == null || !passwordEncoder.matches(loginDto.getPassword(), user.getPasswordHash())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("이메일 또는 비밀번호가 틀렸습니다");
         }
@@ -45,10 +46,36 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 등록된 이메일입니다");
+        }
+        
+        UserProfiles userProfile = new UserProfiles();
+        Users user = new Users();
+        user.setEmail(request.getEmail());
+        userProfile.setName(request.getName());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setUserType(request.getUserType());
+        userRepository.save(user);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body("회원가입 성공");
+    }
+
     @Getter
     @Setter
     public static class LoginRequest {
         private String email;
         private String password;
+    }
+
+    @Getter
+    @Setter
+    public static class RegisterRequest {
+        private String email;
+        private String password;
+        private String name;
+        private Users.UserType userType; // enum 타입 맞게 조정
     }
 }
