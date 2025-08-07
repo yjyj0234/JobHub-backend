@@ -22,8 +22,7 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration}") //  외부 yml 값에서 읽도록 수정
-    private long validityInMilliseconds;
+    private final long validityInMilliseconds = 3600000; // 1시간
 
     @PostConstruct
     protected void init() {
