@@ -18,6 +18,7 @@ import boot.data.entity.UserProfiles;
 import boot.data.entity.Users;
 import boot.data.jwt.JwtTokenProvider;
 import boot.data.repository.UsersRepository;
+import boot.data.type.UserType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -100,7 +101,9 @@ public class AuthController {
         private String email;
         private String password;
         private String name;
-        private String userType;
+        private UserType userType; // enum 타입 맞게 조정
+
+      
 
         private String companyName;
         private String businessRegistrationNumber;

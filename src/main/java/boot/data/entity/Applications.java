@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 
 import org.hibernate.annotations.Comment;
 
+import boot.data.type.ApplicationStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,10 +24,6 @@ import lombok.Setter;
 @Entity
 @Table(name = "applications")
 public class Applications {
-	
-	public enum ApplicationStatus {
-		APPLIED, VIEWED, INTERVIEW_REQUEST, OFFERED, HIRED, REJECTED
-	}
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

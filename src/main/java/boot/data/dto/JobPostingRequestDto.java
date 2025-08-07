@@ -2,19 +2,16 @@ package boot.data.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import boot.data.entity.JobPostingConditions.EducationLevel;
-import boot.data.entity.JobPostingConditions.EmploymentType;
-import boot.data.entity.JobPostingConditions.ExperienceLevel;
-import boot.data.entity.JobPostingConditions.SalaryType;
 import boot.data.type.CloseType;
+import boot.data.type.EducationLevel;
+import boot.data.type.EmploymentType;
+import boot.data.type.ExperienceLevel;
 import boot.data.type.PostingStatus;
+import boot.data.type.SalaryType;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-
-// Enum 타입들은 여기에 직접 정의하거나, 별도의 파일로 관리할 수 있습니다.
-// 간결성을 위해 여기에 정의합니다.
 
 /**
  * 채용 공고 생성을 위한 단일 요청 DTO
