@@ -12,7 +12,7 @@ import boot.data.entity.Users;
 import boot.data.service.UserService;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/user")
 public class UserController {
 	
