@@ -6,6 +6,8 @@ import boot.data.entity.JobPostings;
 // 아래 Repository들을 import 합니다.
 import boot.data.repository.JobPostingConditionsRepository;
 import boot.data.repository.JobPostingsRepository;
+import boot.data.type.CloseType;
+import boot.data.type.PostingStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,11 +37,15 @@ public class JobPostingService {
         
         // DTO에서 받은 데이터로 JobPostings 엔티티의 필드를 채웁니다.
         jobPostings.setTitle(dto.getTitle());
-        jobPostings.setStatus(dto.getStatus());
-        jobPostings.setCloseType(dto.getCloseType());
         jobPostings.setRemote(dto.isRemote());
         jobPostings.setOpenDate(dto.getOpenDate());
         jobPostings.setCloseDate(dto.getCloseDate());
+        
+        // Enum 타입 변환
+        // DTO의 Enum 값을 문자열로 변환(.name())한 뒤,
+        // Entity의 Enum 타입으로 다시 생성(valueOf())합니다.
+        jobPostings.setStatus(PostingStatus.valueOf(dto.getStatus().name()));
+        jobPostings.setCloseType(CloseType.valueOf(dto.getCloseType().name()));
         
         // [중요] 연관관계 필드(Company, Users)는 DTO에서 받은 ID를 이용해
         // 실제 엔티티를 조회한 후 설정해야 합니다. (아래는 예시 코드)

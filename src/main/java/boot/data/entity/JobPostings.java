@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.hibernate.annotations.Comment;
 
+import boot.data.type.CloseType;
+import boot.data.type.PostingStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -24,16 +26,6 @@ import lombok.Data;
 @Data
 @Table(name = "job_postings")
 public class JobPostings {
-	
-	//공고상태를 나타내는 Enum
-	public enum PostingStatus {
-        DRAFT, OPEN, CLOSED, EXPIRED
-
-	}
-	// 마감 유형을 나타내는 Enum
-    public enum CloseType {
-        DEADLINE, UNTIL_FILLED, CONTINUOUS, PERIODIC
-    }
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
