@@ -1,6 +1,8 @@
 package boot.data.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.annotations.Comment;
 
@@ -14,6 +16,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
 
@@ -81,4 +84,37 @@ public class JobPostings {
     @Column(name = "updated_at",nullable = false)
     @Comment("업데이트 일시")
     private LocalDateTime updatedAt=LocalDateTime.now();
+
+    /**
+     * 채용공고와 지역의 다대다 관계
+     * 하나의 공고가 여러 지역을 가질 수 있음 (예: 서울, 부산 동시 채용)
+     * @ManyToMany 대신 중간 테이블 엔티티를 만들어 관리 (쿼리 최적화)
+     */
+    @OneToMany(mappedBy = "jobPosting", fetch = FetchType.LAZY)
+    @Comment("채용공고 지역 매핑")
+    private List<JobPostingLocations> jobPostingLocations = new ArrayList<>();
+    
+    /**
+     * 채용공고와 직무 카테고리의 다대다 관계
+     * 하나의 공고가 여러 직무를 포함할 수 있음 (예: 백엔드+프론트엔드)
+     */
+    @OneToMany(mappedBy = "jobPosting", fetch = FetchType.LAZY)
+    @Comment("채용공고 직무 카테고리 매핑")
+    private List<JobPostingCategories> jobPostingCategories = new ArrayList<>();
+    
+    /**
+     * 검색 최적화를 위한 통합 검색 필드
+     * 제목, 회사명, 직무명을 합쳐서 저장 (전문 검색용)
+     */
+    @Column(name = "search_text", columnDefinition = "TEXT")
+    @Comment("통합 검색을 위한 텍스트 (제목+회사명+직무명)")
+    private String searchText;
+    
+    /**
+     * 조회수 증가 메서드 (동시성 고려)
+     */
+    public void incrementViewCount() {
+        this.viewCount = this.viewCount + 1;
+    }
+
 }
