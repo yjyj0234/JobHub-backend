@@ -14,13 +14,19 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "Community_posts")
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class CommunityPosts {
 	
 	@Id
@@ -42,6 +48,7 @@ public class CommunityPosts {
 	@Comment("게시글 내용")
 	private String content;
 	
+	@Builder.Default
 	@Column(name = "view_count", nullable = false)
 	@Comment("조회수")
 	private Integer viewCount = 0;
