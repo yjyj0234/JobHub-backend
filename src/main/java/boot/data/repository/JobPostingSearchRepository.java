@@ -46,6 +46,6 @@ public interface JobPostingSearchRepository extends JpaRepository<JobPostings,Lo
     @Query("SELECT jp FROM JobPostings jp WHERE jp.status = 'OPEN' ORDER BY jp.viewCount DESC")
     List<JobPostings> findTopByViewCount(Pageable pageable);
 
-
+    
 
 }
