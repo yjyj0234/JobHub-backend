@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.Comment;
 
+import boot.data.type.UserType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,11 +24,6 @@ import lombok.Setter;
 public class Users {
 	//카멜케이스로 언더바 없이 붙여쓰면 알아서 언더바 있는걸로 인식해줌
 	
-	   public enum UserType {
-	        user,
-	        company,
-	        admin
-	    }
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -40,7 +36,7 @@ public class Users {
 	
 	@Enumerated(EnumType.STRING)
 	@Column(name ="user_type",nullable = false)
-	@Comment("사용자 유형(JOBSEEKER/COMPANY_HR/ADMIN)")
+	@Comment("사용자 유형(user/company/admin)")
 	private UserType userType;
 	
 	@Column(name = "is_Active")

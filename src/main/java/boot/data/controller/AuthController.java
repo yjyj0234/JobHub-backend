@@ -18,6 +18,7 @@ import boot.data.entity.UserProfiles;
 import boot.data.entity.Users;
 import boot.data.jwt.JwtTokenProvider;
 import boot.data.repository.UsersRepository;
+import boot.data.type.UserType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -69,7 +70,7 @@ public class AuthController {
             }
 
             try {
-                user.setUserType(Users.UserType.valueOf(userTypeStr.toLowerCase()));
+                user.setUserType(UserType.valueOf(userTypeStr.toLowerCase()));
             } catch (IllegalArgumentException e) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("유효하지 않은 사용자 유형입니다: " + userTypeStr);
             }
@@ -100,8 +101,7 @@ public class AuthController {
         private String email;
         private String password;
         private String name;
-        private String userType;
-
+        private UserType userType; // enum 타입 맞게 조정
         private String companyName;
         private String businessRegistrationNumber;
         private MultipartFile businessCertificationFile;
