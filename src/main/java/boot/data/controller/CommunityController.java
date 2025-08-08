@@ -17,7 +17,7 @@ public class CommunityController {
 
     private final CommunityPostService service;
 
-    
+    //게시판 글쓰기
     @PostMapping("/addpost")
     public ResponseEntity<CommunityPostDto> insertPost(@RequestBody CommunityPostDto dto) {
         CommunityPostDto saved = service.insertDto(dto);
@@ -30,7 +30,7 @@ public class CommunityController {
         return ResponseEntity.ok(service.getOne(id));
     }
 
-    
+    //리스트 출력
     @GetMapping("/list")
     public ResponseEntity<List<CommunityPostDto>> getPostList() {
         return ResponseEntity.ok(service.getList());
