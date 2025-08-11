@@ -37,12 +37,7 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/auth/**").permitAll()
-                 // 웹소켓(핸드셰이크 + SockJS 보조 경로) 허용
-                    .requestMatchers("/ws/**").permitAll()
-
-            // 채팅 REST를 공개로 둘 거면
-             .requestMatchers("/chat/**").permitAll()
+                .requestMatchers("/**","/*", "/auth/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
