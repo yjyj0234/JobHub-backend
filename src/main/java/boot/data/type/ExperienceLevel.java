@@ -1,7 +1,7 @@
 package boot.data.type;
 
 public enum ExperienceLevel {
-	  ENTRY,          // 신입
+	 	 ENTRY,          // 신입
 	    JUNIOR,         // 주니어 (1~3년)
 	    MID,            // 미들 (4~7년)
 	    SENIOR,         // 시니어 (8년 이상)
