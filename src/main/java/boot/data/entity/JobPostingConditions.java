@@ -2,6 +2,10 @@ package boot.data.entity;
 
 import org.hibernate.annotations.Comment;
 
+import boot.data.type.EducationLevel;
+import boot.data.type.EmploymentType;
+import boot.data.type.ExperienceLevel;
+import boot.data.type.SalaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -19,26 +23,6 @@ import lombok.Data;
 @Table(name = "job_posting_conditions")
 public class JobPostingConditions {
 	
-	public enum EmploymentType {
-        FULL_TIME, PART_TIME, CONTRACT, INTERN, FREELANCE
-	}
-	 // 경력
-    public enum ExperienceLevel {
-        ENTRY, JUNIOR, MID, SENIOR, LEAD, EXECUTIVE
-    }
-    //학력 COLLEGE:전문대학 졸업,UNIVERSITY:4년제 대학교 졸업
-    //MASTER:대학원 석사 졸업,PHD:박사 학위 보유
-    public enum EducationLevel {
-        ANY, HIGH_SCHOOL, COLLEGE, UNIVERSITY, MASTER, PHD
-    }
-    
-    // 급여 유형을 나타내는 Enum
-    //NEGOTIABLE	협의 가능 (Salary to be negotiated) 면접 후 결정 등
-    //UNDISCLOSED	비공개 (Salary not disclosed) 급여 정보를 공개하지 않음
-    public enum SalaryType {
-        ANNUAL, MONTHLY, HOURLY, NEGOTIABLE, UNDISCLOSED
-    }
-    
     @Id
     @Column(name = "posting_id")
     private Long postingId;

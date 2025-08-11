@@ -1,12 +1,15 @@
 package boot.data.controller;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,9 +21,12 @@ import boot.data.entity.UserProfiles;
 import boot.data.entity.Users;
 import boot.data.jwt.JwtTokenProvider;
 import boot.data.repository.UsersRepository;
+import boot.data.type.UserType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+
+import java.beans.PropertyEditorSupport;
 
 @RestController
 @RequestMapping("/auth")
@@ -31,6 +37,21 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(UserType.class, new PropertyEditorSupport() {
+            @Override
+            public void setAsText(String text) throws IllegalArgumentException {
+                if (text == null) {
+                    setValue(null);
+                } else {
+                    String normalized = text.trim().toUpperCase(Locale.ROOT);
+                    setValue(UserType.valueOf(normalized));
+                }
+            }
+        });
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginDto) {
         Users user = userRepository.findByEmail(loginDto.getEmail()).orElse(null);
@@ -38,12 +59,12 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("이메일 또는 비밀번호가 틀렸습니다");
         }
 
-        String token = jwtTokenProvider.createToken(user.getEmail(), user.getUserType().toString());
+        String token = jwtTokenProvider.createToken(user.getEmail(), user.getUserType().name());
 
         Map<String, Object> response = new HashMap<>();
         response.put("token", token);
         response.put("email", user.getEmail());
-        response.put("role", user.getUserType());
+        response.put("role", user.getUserType().name());
         response.put("userId", user.getId());
 
         return ResponseEntity.ok(response);
@@ -56,32 +77,36 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 등록된 이메일입니다");
             }
 
-            UserProfiles userProfile = new UserProfiles();
-            userProfile.setName(request.getName());
 
-            Users user = new Users();
-            user.setEmail(request.getEmail());
-            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-
-            String userTypeStr = request.getUserType();
-            if (userTypeStr == null || userTypeStr.isEmpty()) {
+            if (request.getUserType() == null) {
                 return ResponseEntity.badRequest().body("userType은 필수입니다");
             }
 
-            try {
-                user.setUserType(Users.UserType.valueOf(userTypeStr.toLowerCase()));
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("유효하지 않은 사용자 유형입니다: " + userTypeStr);
-            }
+  
+            UserProfiles userProfile = new UserProfiles();
+            userProfile.setName(request.getName());
 
+
+            // 유저 생성
+            Users user = new Users();
+            user.setEmail(request.getEmail());
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            user.setUserType(request.getUserType());
+
+    
+                System.out.println("여기까지성공");
+       
             userRepository.save(user);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "회원가입 성공");
             response.put("email", user.getEmail());
-            response.put("userType", user.getUserType());
+            response.put("userType", user.getUserType().name());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("유효하지 않은 사용자 유형입니다: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("요청 파싱 오류: " + e.getMessage());
         }
@@ -100,7 +125,7 @@ public class AuthController {
         private String email;
         private String password;
         private String name;
-        private String userType;
+        private UserType userType;
 
         private String companyName;
         private String businessRegistrationNumber;
