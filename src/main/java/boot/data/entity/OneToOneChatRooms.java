@@ -20,23 +20,22 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "One_to_one_chat_rooms")
+@Table(name = "one_to_one_chat_rooms")
 public class OneToOneChatRooms {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Comment("1:1 채팅방 PK")
+	@Comment("메세지 PK")
 	private Long id;
 	
+	@Column(name = "room_key", nullable = false, length = 100)
+	@Comment("채팅방 식별자")
+	private String roomKey;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id", nullable = false)
 	@Comment("유저(users.id)")
 	private Users user;
-	
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "companies_id", nullable = false)
-	@Comment("기업 (companies.id)")
-	private Companies company;
 	
 	@Column(name = "created_at", nullable = false)
 	@Comment("생성일")
