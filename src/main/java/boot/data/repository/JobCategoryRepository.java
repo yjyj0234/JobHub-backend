@@ -9,4 +9,7 @@ import java.util.List;
 public interface JobCategoryRepository extends JpaRepository<JobCategories, Integer> {
     List<JobCategories> findByLevel(Short level);
     List<JobCategories> findByParentId(Integer parentId);
+    List<JobCategories> findByParentIsNull();
+
+    List<JobCategories> findAllByOrderByIdAsc();
 }

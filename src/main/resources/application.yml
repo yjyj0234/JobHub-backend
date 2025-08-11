@@ -19,8 +19,18 @@ spring:
     show-sql: true
     database: mysql
     database-platform: org.hibernate.dialect.MySQLDialect
-  #jwt
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+                  #jwt
 jwt:
   secret: 123456789012345678901234567890123456789
   expiration: 86400000 # 1 day in milliseconds
 
+#aws cloud
+cloud:
+  aws:
+    region: ap-northeast-2
+    s3:
+      bucket: myproject-buckets
