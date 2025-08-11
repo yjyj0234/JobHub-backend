@@ -22,6 +22,7 @@ public class CommunityPostDto {
     private Integer viewCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String userName;
 
     private Long userId;
     

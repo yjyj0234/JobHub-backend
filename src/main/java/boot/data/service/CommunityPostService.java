@@ -6,13 +6,17 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import boot.data.dto.CommunityPostDto;
 import boot.data.entity.CommunityPosts;
+import boot.data.entity.UserProfiles;
 import boot.data.entity.Users;
 import boot.data.repository.CommunityPostsRepository;
+import boot.data.repository.UserProfilesRepository;
 import boot.data.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +26,7 @@ public class CommunityPostService {
 
     private final CommunityPostsRepository communityPostsRepository;
     private final UsersRepository usersRepository;
+    private final UserProfilesRepository userProfilesRepository;
 
     // === Create ===
     @Transactional
@@ -53,20 +58,25 @@ public class CommunityPostService {
     }
 
     // === Read One ===
-    @Transactional(readOnly = true)
+     @Transactional(readOnly = true)
     public CommunityPostDto getOne(Long id) {
-        CommunityPosts post = communityPostsRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("게시글 없음: " + id));
+        CommunityPosts p = communityPostsRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found")); // 404로
 
-        CommunityPostDto res = new CommunityPostDto();
-        res.setId(post.getId());
-        res.setUserId(post.getUser() != null ? post.getUser().getId() : null);
-        res.setTitle(post.getTitle());
-        res.setContent(post.getContent());
-        res.setViewCount(post.getViewCount());
-        res.setCreatedAt(post.getCreatedAt());
-        res.setUpdatedAt(post.getUpdatedAt());
-        return res;
+        // 프로필 이름 개별 조회 (fetch join 아님)
+        String userName = userProfilesRepository.findByUserId(p.getUser().getId())
+                .map(UserProfiles::getName)
+                .orElse("탈퇴회원");
+
+        return CommunityPostDto.builder()
+                .id(p.getId())
+                .title(p.getTitle())
+                .content(p.getContent())
+                .viewCount(p.getViewCount())
+                .createdAt(Optional.ofNullable(p.getCreatedAt())
+                .orElse(LocalDateTime.now()))
+                .userName(userName)        // ← 프론트가 바로 쓰게
+                .build();
     }
 
     // === Read List (최신순) ===
