@@ -13,64 +13,53 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
 
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}")
-    private String secretKeyString;
+    @Value("${jwt.secret}") // 최소 32바이트 이상(HS256)
+    private String secretKeyRaw;
 
-    private SecretKey secretKey;
-    private final long validityInMilliseconds = 360000; // 1시간
+    private final long validityInMilliseconds = 3600000; // 1시간
 
-    @PostConstruct
-    protected void init() {
-        byte[] keyBytes = secretKeyString.getBytes(StandardCharsets.UTF_8);
-        secretKey = Keys.hmacShaKeyFor(keyBytes);
+    private SecretKey key() {
+        // secret이 그냥 문자열이면 아래처럼 사용 (Base64 미필요)
+        return Keys.hmacShaKeyFor(secretKeyRaw.getBytes(StandardCharsets.UTF_8));
+        // 만약 Base64로 저장했다면: Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKeyRaw));
     }
 
     public String createToken(String email, String role) {
-        Claims claims = Jwts.claims().setSubject(email);
-        claims.put("role", role);
-
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
         return Jwts.builder()
-                .setClaims(claims)
+                .setSubject(email)
+                .claim("role", role)
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public Authentication getAuthentication(String token) {
-        String email = getEmail(token);
-        return new UsernamePasswordAuthenticationToken(new User(email, "", List.of()), "", List.of());
-    }
-
-    public String getEmail(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key())
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
+
+        String email = claims.getSubject();
+        return new UsernamePasswordAuthenticationToken(new User(email, "", List.of()), "", List.of());
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token);
+            Jwts.parserBuilder().setSigningKey(key()).build().parseClaimsJws(token);
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (Exception e) {
             return false;
         }
     }
