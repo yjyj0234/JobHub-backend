@@ -25,7 +25,7 @@ public class CommunityController {
     }
 
     // === 단건 조회 ===
-    @GetMapping("/dd")
+    @GetMapping("/detail/{id}")
     public ResponseEntity<CommunityPostDto> getPost(@PathVariable Long id) {
         return ResponseEntity.ok(service.getOne(id));
     }
@@ -36,24 +36,24 @@ public class CommunityController {
         return ResponseEntity.ok(service.getList());
     }
 
-    // === 수정 ===
-    @PutMapping("/")
-    public ResponseEntity<CommunityPostDto> updatePost(@PathVariable Long id,
-                                                       @RequestBody CommunityPostDto dto) {
-        return ResponseEntity.ok(service.update(id, dto));
-    }
+    // // === 수정 ===
+    // @PutMapping("/")
+    // public ResponseEntity<CommunityPostDto> updatePost(@PathVariable Long id,
+    //                                                    @RequestBody CommunityPostDto dto) {
+    //     return ResponseEntity.ok(service.update(id, dto));
+    // }
 
-    // === 삭제 ===
-    @DeleteMapping("/")
-    public ResponseEntity<Void> deletePost(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
-    }
+    // // === 삭제 ===
+    // @DeleteMapping("/")
+    // public ResponseEntity<Void> deletePost(@PathVariable Long id) {
+    //     service.delete(id);
+    //     return ResponseEntity.noContent().build();
+    // }
 
-    // === 조회수 증가 ===
-    @PostMapping("/view")
-    public ResponseEntity<Void> increaseViewCount(@PathVariable Long id) {
-        service.increaseViewCount(id);
-        return ResponseEntity.ok().build();
-    }
+    // // === 조회수 증가 ===
+    // @PostMapping("/view")
+    // public ResponseEntity<Void> increaseViewCount(@PathVariable Long id) {
+    //     service.increaseViewCount(id);
+    //     return ResponseEntity.ok().build();
+    // }
 }
