@@ -53,10 +53,12 @@ public class CommunityPosts {
 	@Comment("조회수")
 	private Integer viewCount = 0;
 	
+	@Builder.Default
 	@Column(name = "created_at", nullable = false)
 	@Comment("생성일")
 	private LocalDateTime createdAt = LocalDateTime.now();
 	
+	@Builder.Default
 	@Column(name = "updated_at", nullable = false)
 	@Comment("수정일")
 	private LocalDateTime updatedAt = LocalDateTime.now();
