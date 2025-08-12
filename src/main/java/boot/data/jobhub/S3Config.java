@@ -11,8 +11,11 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Configuration
 public class S3Config {
+
+    @Value("${cloud.aws.region}") String region;
+
     @Bean
-    public S3Client s3Client(@Value("${cloud.aws.region}") String region) {
+    public S3Client s3Client() {
         return S3Client.builder()
                 .region(Region.of(region))
                 .credentialsProvider(DefaultCredentialsProvider.create())

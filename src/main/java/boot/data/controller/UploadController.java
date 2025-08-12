@@ -32,4 +32,13 @@ public class UploadController {
         }
         return Map.of("files", out);
     }
+    //에러 원인 찾을때
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, Object> onError(Exception e) {
+        e.printStackTrace();
+        
+        return Map.of("error", e.getClass().getSimpleName(),
+        "message",String.valueOf(e.getMessage()));
+    }
 }
