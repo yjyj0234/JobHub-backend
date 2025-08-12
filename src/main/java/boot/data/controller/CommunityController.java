@@ -11,7 +11,7 @@ import boot.data.service.CommunityPostService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RequestMapping("/community")
 @RequiredArgsConstructor
 public class CommunityController {
@@ -20,8 +20,9 @@ public class CommunityController {
 
     //게시판 글쓰기
     @PostMapping("/addpost")
-    public ResponseEntity<CommunityPostDto> insertPost(@RequestBody CommunityPostDto dto,  @AuthenticationPrincipal(expression = "id") Long userId) {
-        dto.setUserId(userId);
+    public ResponseEntity<CommunityPostDto> insertPost(@RequestBody CommunityPostDto dto  //@AuthenticationPrincipal(expression = "id") Long userId
+    ) {
+        // dto.setUserId(userId);
         CommunityPostDto saved = service.insertDto(dto);
         return ResponseEntity.ok(saved);
     }
