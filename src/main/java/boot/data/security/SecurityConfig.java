@@ -18,38 +18,42 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import boot.data.jwt.JwtAuthenticationFilter;
 import boot.data.jwt.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtTokenProvider jwtTokenProvider;
+    // JwtAuthenticationFilter Bean을 통해 JwtTokenProvider를 간접 참조
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider provider) {
+        return new JwtAuthenticationFilter(provider);
+    }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationFilter jwtFilter) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/*","/**").permitAll()
+                .requestMatchers("/**","/*", "/auth/**").permitAll()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
+        var config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:3000"));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
-    
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
+        var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }

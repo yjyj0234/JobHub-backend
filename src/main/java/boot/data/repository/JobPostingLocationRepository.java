@@ -4,8 +4,12 @@ package boot.data.repository;
 import boot.data.entity.JobPostingLocations;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
+
+@Repository
 public interface JobPostingLocationRepository extends JpaRepository<JobPostingLocations, Long> {
     
     /**

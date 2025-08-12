@@ -1,34 +1,37 @@
 package boot.data.jwt;
 
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
-
-import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
-import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}") // 최소 32바이트 이상(HS256)
+    @Value("${jwt.secret}")
     private String secretKeyRaw;
 
+    private Key key;
     private final long validityInMilliseconds = 3600000; // 1시간
 
-    private SecretKey key() {
-        // secret이 그냥 문자열이면 아래처럼 사용 (Base64 미필요)
-        return Keys.hmacShaKeyFor(secretKeyRaw.getBytes(StandardCharsets.UTF_8));
-        // 만약 Base64로 저장했다면: Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKeyRaw));
+    @PostConstruct
+    protected void init() {
+        // 키 생성 (JJWT 0.11+ 방식)
+        byte[] secret = Base64.getEncoder()
+                .encode(secretKeyRaw.getBytes(StandardCharsets.UTF_8));
+        this.key = Keys.hmacShaKeyFor(secret);
     }
 
     public String createToken(String email, String role) {
@@ -40,27 +43,30 @@ public class JwtTokenProvider {
                 .claim("role", role)
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .signWith(key(), SignatureAlgorithm.HS256)
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
-    }
-
-    public Authentication getAuthentication(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-
-        String email = claims.getSubject();
-        return new UsernamePasswordAuthenticationToken(new User(email, "", List.of()), "", List.of());
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(key()).build().parseClaimsJws(token);
+            Jwts.parserBuilder().setSigningKey(key).build()
+                    .parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    public String getEmail(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    public Authentication getAuthentication(String token) {
+        String email = getEmail(token);
+        // 권한 필요하면 여기서 GrantedAuthority 구성
+        return new UsernamePasswordAuthenticationToken(email, null, List.of());
     }
 }

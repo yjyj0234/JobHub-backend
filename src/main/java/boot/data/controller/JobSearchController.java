@@ -17,7 +17,7 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/api/search")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000"})
+
 public class JobSearchController {
     
     private final JobSearchService jobSearchService;  // ⭐ CategoryService 제거
