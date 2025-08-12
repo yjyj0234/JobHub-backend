@@ -221,3 +221,7 @@ gradle-app.setting
 ### Gradle Patch ###
 # Java heap dump
 *.hprof
+
+# App secrets
+/src/main/resources/application-secret.yml
+bin/main/application-secret.yml
