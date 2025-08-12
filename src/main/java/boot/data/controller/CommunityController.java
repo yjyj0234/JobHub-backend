@@ -3,6 +3,7 @@ package boot.data.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import boot.data.dto.CommunityPostDto;
@@ -19,7 +20,8 @@ public class CommunityController {
 
     //게시판 글쓰기
     @PostMapping("/addpost")
-    public ResponseEntity<CommunityPostDto> insertPost(@RequestBody CommunityPostDto dto) {
+    public ResponseEntity<CommunityPostDto> insertPost(@RequestBody CommunityPostDto dto,  @AuthenticationPrincipal(expression = "id") Long userId) {
+        dto.setUserId(userId);
         CommunityPostDto saved = service.insertDto(dto);
         return ResponseEntity.ok(saved);
     }
@@ -39,7 +41,8 @@ public class CommunityController {
     // === 수정 ===
     @PutMapping("/edit/{id}") // @AuthenticationPrincipal CustomUser user  // 토큰 쓰면 이걸로 작성자 확인
     public ResponseEntity<CommunityPostDto> updatePost(@PathVariable("id") Long id,
-                                                       @RequestBody CommunityPostDto dto) {
+                                                       @RequestBody CommunityPostDto dto
+                                                        ) {
         return ResponseEntity.ok(service.update(id, dto));
     }
 

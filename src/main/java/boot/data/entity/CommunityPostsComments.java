@@ -14,13 +14,20 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "Community_posts_comments")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+
 public class CommunityPostsComments {
 	
 	@Id
@@ -38,11 +45,6 @@ public class CommunityPostsComments {
 	@Comment("작성자 FK")
 	private Users user;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "parent_id")
-	@Comment("부모 댓글 ID")
-	private CommunityPostsComments parent;
-	
 	@Lob
 	@Column(columnDefinition = "TEXT", nullable = false)
 	@Comment("댓글 내용")
@@ -52,10 +54,12 @@ public class CommunityPostsComments {
 	@Comment("삭제 여부")
 	private boolean isDeleted = false;
 	
+	@Builder.Default
 	@Column(name = "created_at", nullable = false)
 	@Comment("작성일")
 	private LocalDateTime createdAt = LocalDateTime.now();
 	
+	@Builder.Default
 	@Column(name = "updated_at", nullable = false)
 	@Comment("수정일")
 	private LocalDateTime updatedAt = LocalDateTime.now();
