@@ -15,7 +15,7 @@ import java.util.HashMap;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/search")
+@RequestMapping("/search")
 @RequiredArgsConstructor
 @CrossOrigin(origins = {"http://localhost:3000"})
 public class JobSearchController {
