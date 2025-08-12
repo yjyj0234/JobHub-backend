@@ -36,19 +36,19 @@ public class CommunityController {
         return ResponseEntity.ok(service.getList());
     }
 
-    // // === 수정 ===
-    // @PutMapping("/")
-    // public ResponseEntity<CommunityPostDto> updatePost(@PathVariable Long id,
-    //                                                    @RequestBody CommunityPostDto dto) {
-    //     return ResponseEntity.ok(service.update(id, dto));
-    // }
+    // === 수정 ===
+    @PutMapping("/edit/{id}") // @AuthenticationPrincipal CustomUser user  // 토큰 쓰면 이걸로 작성자 확인
+    public ResponseEntity<CommunityPostDto> updatePost(@PathVariable("id") Long id,
+                                                       @RequestBody CommunityPostDto dto) {
+        return ResponseEntity.ok(service.update(id, dto));
+    }
 
-    // // === 삭제 ===
-    // @DeleteMapping("/")
-    // public ResponseEntity<Void> deletePost(@PathVariable Long id) {
-    //     service.delete(id);
-    //     return ResponseEntity.noContent().build();
-    // }
+    // === 삭제 ===
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePost(@PathVariable("id") Long id) {
+        service.delete(id);
+        return ResponseEntity.noContent().build();
+    }
 
     // === 조회수 증가 ===
     @PostMapping("/{id}/view")
