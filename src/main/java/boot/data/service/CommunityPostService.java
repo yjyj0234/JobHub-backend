@@ -63,20 +63,19 @@ public class CommunityPostService {
         CommunityPosts p = communityPostsRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found")); // 404로
 
-        // 프로필 이름 개별 조회 (fetch join 아님)
+        // 유저 정보 가져오기
         String userName = userProfilesRepository.findByUserId(p.getUser().getId())
                 .map(UserProfiles::getName)
                 .orElse("탈퇴회원");
 
-        return CommunityPostDto.builder()
-                .id(p.getId())
-                .title(p.getTitle())
-                .content(p.getContent())
-                .viewCount(p.getViewCount())
-                .createdAt(Optional.ofNullable(p.getCreatedAt())
-                .orElse(LocalDateTime.now()))
-                .userName(userName)        // ← 프론트가 바로 쓰게
-                .build();
+        CommunityPostDto dto = new CommunityPostDto();
+        dto.setId(p.getId());
+        dto.setTitle(p.getTitle());
+        dto.setContent(p.getContent());
+        dto.setViewCount(Optional.ofNullable(p.getViewCount()).orElse(0));
+        dto.setCreatedAt(Optional.ofNullable(p.getCreatedAt()).orElse(LocalDateTime.now()));
+        dto.setUserName(userName);
+        return dto;
     }
 
     // === Read List (최신순) ===
@@ -84,7 +83,12 @@ public class CommunityPostService {
     public List<CommunityPostDto> getList() {
         List<CommunityPosts> posts = communityPostsRepository.findAll(
                 Sort.by(Sort.Direction.DESC, "id")
+                
         );
+
+        String userName = userProfilesRepository.findByUserId(posts.get(0).getUser().getId())
+                .map(UserProfiles::getName)
+                .orElse("탈퇴회원"); 
 
         List<CommunityPostDto> result = new ArrayList<>();
         for (CommunityPosts post : posts) {
@@ -96,6 +100,7 @@ public class CommunityPostService {
             dto.setViewCount(post.getViewCount());
             dto.setCreatedAt(post.getCreatedAt());
             dto.setUpdatedAt(post.getUpdatedAt());
+            dto.setUserName(userName);
             result.add(dto);
         }
         return result;

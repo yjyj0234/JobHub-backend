@@ -26,8 +26,8 @@ public class CommunityController {
 
     // === 단건 조회 ===
     @GetMapping("/detail/{id}")
-    public ResponseEntity<CommunityPostDto> getPost(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getOne(id));
+    public ResponseEntity<CommunityPostDto> getPost(@PathVariable("id") Long id) {  //PathVariable:  요청 URL 경로에 포함된 값을 메서드 파라미터로 바로 매핑해 주는 스프링 MVC 기능
+        return ResponseEntity.ok(service.getOne(id));                          // ex) 클라이언트에서 id=18을 보내면 {id=18}로 자동들어감
     }
 
     //리스트 출력
@@ -50,10 +50,10 @@ public class CommunityController {
     //     return ResponseEntity.noContent().build();
     // }
 
-    // // === 조회수 증가 ===
-    // @PostMapping("/view")
-    // public ResponseEntity<Void> increaseViewCount(@PathVariable Long id) {
-    //     service.increaseViewCount(id);
-    //     return ResponseEntity.ok().build();
-    // }
+    // === 조회수 증가 ===
+    @PostMapping("/{id}/view")
+    public ResponseEntity<Void> increaseViewCount(@PathVariable("id") Long id) {
+        service.increaseViewCount(id);
+        return ResponseEntity.ok().build();
+    }
 }
