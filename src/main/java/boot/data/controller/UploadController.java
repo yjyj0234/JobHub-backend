@@ -41,4 +41,12 @@ public class UploadController {
         return Map.of("error", e.getClass().getSimpleName(),
         "message",String.valueOf(e.getMessage()));
     }
+
+    // 페이지 열릴 때 key로 이 API를 호출해서 항상 새 url을 받아 <img src={url}>로 쓰면 됨
+    @GetMapping("/api/files/presign")
+    public Map<String, Object> presign(@RequestParam String key) {
+        // TODO: 로그인/소유권 체크
+        String url = storage.presignGetUrl(key, java.time.Duration.ofMinutes(30));
+        return Map.of("key", key, "url", url, "expiresInSec", 30*60);
+    }
 }

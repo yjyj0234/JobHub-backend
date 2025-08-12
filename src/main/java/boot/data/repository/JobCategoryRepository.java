@@ -3,6 +3,8 @@ package boot.data.repository;
 import boot.data.entity.JobCategories;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -12,4 +14,5 @@ public interface JobCategoryRepository extends JpaRepository<JobCategories, Inte
     List<JobCategories> findByParentIsNull();
 
     List<JobCategories> findAllByOrderByIdAsc();
+    List<JobCategories> findByIdIn(Collection<Integer> ids);
 }
