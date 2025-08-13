@@ -31,7 +31,7 @@ public class ResumeController {
     //이력서 생성 API
     //POST /resumes
 
-@PostMapping
+@PostMapping("/")
 public ResponseEntity<?> createResume(@Valid @RequestBody ResumeCreateDto dto){
 
     try{
@@ -42,12 +42,12 @@ public ResponseEntity<?> createResume(@Valid @RequestBody ResumeCreateDto dto){
 
         //두번째 레슨:  현재 로그인한 사용자 ID만 추출해서 Service에 전달
         Long userId = authUtil.getCurrentUserId();
-        log.info("이력서 생성 요청자: userId: ", userId);
+        log.info("이력서 생성 요청자: userId= {}", userId);
 
         //세번째 레슨: service에서 처리한 로직 가져오기
         Long resumeId= resumeService.createResume(userId,dto);
 
-        return ResponseEntity.created(URI.create("/api/resumes/" + resumeId))  
+        return ResponseEntity.created(URI.create("/resumes/" + resumeId))  
         .body(Map.of("id", resumeId, "message", "이력서가 생성되었습니다"));
         
     }catch (IllegalStateException e) {
