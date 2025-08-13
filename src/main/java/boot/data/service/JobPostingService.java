@@ -1,8 +1,14 @@
 package boot.data.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import boot.data.dto.JobPostingCreateDto;
-import boot.data.dto.JobPostingRequestDto;
 import boot.data.dto.JobPostingCreateDto.CategoryItem;
+import boot.data.dto.JobPostingRequestDto;
 import boot.data.entity.Companies;
 import boot.data.entity.JobCategories;
 import boot.data.entity.JobPostingCategories;
@@ -14,22 +20,15 @@ import boot.data.entity.Users;
 import boot.data.repository.CompaniesRepository;
 import boot.data.repository.JobCategoryRepository;
 import boot.data.repository.JobPostingCategoriesRepository;
-// 아래 Repository들을 import 합니다.
 import boot.data.repository.JobPostingConditionsRepository;
 import boot.data.repository.JobPostingLocationRepository;
 import boot.data.repository.JobPostingsRepository;
 import boot.data.repository.RegionRepository;
 import boot.data.repository.UsersRepository;
+import boot.data.security.CurrentUser;
 import boot.data.type.CloseType;
 import boot.data.type.PostingStatus;
 import lombok.RequiredArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 @Service
 @RequiredArgsConstructor // final 필드에 대한 생성자를 자동으로 주입해주는 Lombok 어노테이션
 public class JobPostingService {
@@ -43,7 +42,7 @@ public class JobPostingService {
     private final UsersRepository usersRepository;
     private final RegionRepository regionRepository;
     private final JobCategoryRepository jobCategoryRepository;
-
+    private final CurrentUser currentUser;
 
 
 
@@ -59,6 +58,11 @@ public class JobPostingService {
      */
     @Transactional // 이 메소드 내의 모든 DB 작업이 하나의 단위로 묶입니다. (All or Nothing)
     public JobPostings createJobPosting(JobPostingRequestDto dto) {
+        
+
+        Long uid = currentUser.idOrThrow();
+
+
         
         // --- 1. 부모 엔티티(JobPostings) 생성 ---
         JobPostings jobPostings = new JobPostings();
