@@ -1,5 +1,8 @@
 package boot.data.dto;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;
@@ -25,9 +28,9 @@ public class CommunityCommentDto {
 
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private String createdAt; // 작성일
+    private LocalDateTime createdAt; // 작성일
 
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private String updatedAt; // 수정일
+    private LocalDateTime updatedAt; // 수정일
 }

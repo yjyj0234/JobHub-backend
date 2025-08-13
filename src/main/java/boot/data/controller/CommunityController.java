@@ -3,7 +3,6 @@ package boot.data.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import boot.data.dto.CommunityPostDto;
@@ -20,9 +19,7 @@ public class CommunityController {
 
     //게시판 글쓰기
     @PostMapping("/addpost")
-    public ResponseEntity<CommunityPostDto> insertPost(@RequestBody CommunityPostDto dto  //@AuthenticationPrincipal(expression = "id") Long userId
-    ) {
-        // dto.setUserId(userId);
+    public ResponseEntity<CommunityPostDto> insertPost(@RequestBody CommunityPostDto dto) {
         CommunityPostDto saved = service.insertDto(dto);
         return ResponseEntity.ok(saved);
     }
