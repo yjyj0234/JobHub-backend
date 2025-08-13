@@ -3,7 +3,6 @@ package boot.data.jwt;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -11,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import boot.data.security.AuthUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -79,12 +79,22 @@ public class JwtTokenProvider {
         return getClaims(token).get("role", String.class);
     }
 
+    private String normalizeRole(String role) {
+        if (role == null || role.isBlank()) return null;
+        return role.startsWith("ROLE_") ? role : "ROLE_" + role;
+    }
     // 필요하다면 여기서 Authentication 생성(Principal을 uid로 세팅)
     public Authentication getAuthentication(String token) {
         Long uid = getUserId(token);
-        String role = getRole(token);
-        var authorities = (role == null) ? List.<SimpleGrantedAuthority>of()
-                                         : List.of(new SimpleGrantedAuthority(role));
-        return new UsernamePasswordAuthenticationToken(uid, null, authorities);
+        String email = getEmail(token);
+        String role = normalizeRole(getRole(token)); // <- 정규화
+    
+        var authorities = (role == null)
+            ? java.util.List.<SimpleGrantedAuthority>of()
+            : java.util.List.of(new SimpleGrantedAuthority(role));
+    
+        // principal 을 AuthUser 로
+        var principal = new AuthUser(uid, email, role);
+        return new UsernamePasswordAuthenticationToken(principal, null, authorities);
     }
 }
