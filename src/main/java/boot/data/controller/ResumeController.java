@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ResumeController {
     
     private final AuthUtil authUtil;
+    private final ResumeService resumeService;
 
     //이력서 생성 API
     //POST /resumes
@@ -44,7 +45,7 @@ public ResponseEntity<?> createResume(@Valid @RequestBody ResumeCreateDto dto){
         log.info("이력서 생성 요청자: userId: ", userId);
 
         //세번째 레슨: service에서 처리한 로직 가져오기
-        Long resumeId = ResumeService.createResume(userId,dto);
+        Long resumeId= resumeService.createResume(userId,dto);
 
         return ResponseEntity.created(URI.create("/api/resumes/" + resumeId))  
         .body(Map.of("id", resumeId, "message", "이력서가 생성되었습니다"));
