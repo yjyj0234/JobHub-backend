@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 
 @RestController
-@RequestMapping("/api/postings")
+@RequestMapping("api/postings")
 @RequiredArgsConstructor
 public class JobPostingController {
 
