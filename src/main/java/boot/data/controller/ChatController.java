@@ -21,7 +21,7 @@ public class ChatController {
 
     // 메시지 저장 (웹소켓과 별개로 REST로도 저장 가능)
     @PostMapping("/message")
-    public ResponseEntity<ChatMessageDto> saveMessage(@Validated @RequestBody ChatSendRequest req) {
+    public ResponseEntity<ChatMessageDto> saveMessage(@Validated @RequestBody ChatSendRequest req) { //@Validated 스프링의 검증 트리거 @RequestBody에 붙이면 DTO의 @NotNull, @NotBlank 같은 Bean Validation 제약을 검사
         ChatMessageDto saved = chatService.saveMessage(req);
         return ResponseEntity.ok(saved);
     }

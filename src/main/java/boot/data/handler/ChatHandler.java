@@ -53,6 +53,10 @@ public class ChatHandler extends TextWebSocketHandler {
             // 프런트가 순수 문자열만 보낸 경우 보정
             Long uid = (Long) session.getAttributes().get("userId");
             String rk = (String) session.getAttributes().get("roomKey");
+             if (uid == null || rk == null) {
+            session.sendMessage(new TextMessage("{\"error\":\"missing roomKey/userId\"}"));
+            return; // 연결 유지
+        }
             req = new ChatSendRequest();
             req.setUserId(uid);
             req.setRoomKey(rk);
