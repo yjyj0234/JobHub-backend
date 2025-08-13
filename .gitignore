@@ -228,3 +228,6 @@ gradle-app.setting
 #S3 secret
 bin/main/application-secret.yml
 src/main/resources/application-secret.yml
+.settings/
+.project
+.classpath
