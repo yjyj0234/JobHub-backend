@@ -8,6 +8,10 @@
 .settings/
 .classpath
 .project
+
+#.settings
+.settings/org.eclipse.buildship.core
+
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml
