@@ -7,11 +7,7 @@ plugins {
 group = 'boot.data'
 version = '0.0.1-SNAPSHOT'
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
-}
+// Ensure JAVA_HOME is set to a valid JDK 17 installation in your environment.
 
 configurations {
 	compileOnly {
