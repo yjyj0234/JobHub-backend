@@ -16,14 +16,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketConfigurer {
     private final ChatHandler chatHandler;
-    private final QueryParamInterceptor interceptor;
+    
 
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(chatHandler, "/ws/chat")
                 .setAllowedOriginPatterns("*") // 실무에선 * 지양하고 도메인 명시
-                .addInterceptors(interceptor)
                 .withSockJS(); // 없어도 됨: WebSocket만 쓸 경우 생략 가능
     }
 }
