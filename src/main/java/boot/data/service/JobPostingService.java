@@ -61,7 +61,7 @@ public class JobPostingService {
         
 
         Long uid = currentUser.idOrThrow();
-
+        String urole=currentUser.roleOrNull();
 
         
         // --- 1. 부모 엔티티(JobPostings) 생성 ---
