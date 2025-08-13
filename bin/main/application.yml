@@ -11,6 +11,11 @@ spring:
     url: jdbc:mysql://finalproject.c3m0eoo0uhk9.ap-northeast-2.rds.amazonaws.com:3306/final?serverTimezone=Asia/Seoul
     username: tkddyd04
     password: Tkddyd04!
+    hikariL:
+      max-lifetime: 540000     # 9분
+      idle-timeout: 300000     # 5분
+      validation-timeout: 3000
+      connection-timeout: 30000
   #jpa_setting
   jpa:
     hibernate:
@@ -19,7 +24,13 @@ spring:
     show-sql: true
     database: mysql
     database-platform: org.hibernate.dialect.MySQLDialect
-  #jwt
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  profiles:
+   include: secret  # 민감정보 secret 파일
+                  #jwt
 jwt:
   secret: 123456789012345678901234567890123456789
   expiration: 86400000 # 1 day in milliseconds

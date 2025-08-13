@@ -2,6 +2,8 @@ package boot.data.dto;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,10 +22,16 @@ public class CommunityPostDto {
     private String title;
     private String content;
     private Integer viewCount;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
     private String userName;
 
     private Long userId;
+
+    private boolean owner; // 현재 로그인한 사용자가 작성자인지 여부
     
 }

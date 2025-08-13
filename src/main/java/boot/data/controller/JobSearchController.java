@@ -17,7 +17,7 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/api/search")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000"})
+
 public class JobSearchController {
     
     private final JobSearchService jobSearchService;  // ⭐ CategoryService 제거
@@ -37,7 +37,7 @@ public class JobSearchController {
      */
     @GetMapping("/regions")
     public ResponseEntity<?> getRegions(
-            @RequestParam(required = false) Integer parentId) {
+            @RequestParam(value = "parentId", required = false) Integer parentId) {
         
         Map<String, Object> response = new HashMap<>();
         
@@ -62,7 +62,7 @@ public class JobSearchController {
      */
     @GetMapping("/job-categories")
     public ResponseEntity<?> getJobCategories(
-            @RequestParam(required = false) Integer parentId) {
+            @RequestParam(value = "parentId",required = false) Integer parentId) {
         
         Map<String, Object> response = new HashMap<>();
         

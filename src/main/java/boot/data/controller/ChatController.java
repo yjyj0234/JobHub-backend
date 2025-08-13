@@ -3,6 +3,7 @@ package boot.data.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,8 +21,8 @@ public class ChatController {
     private final ChatService chatService;
 
     // 메시지 저장 (웹소켓과 별개로 REST로도 저장 가능)
-    @PostMapping("/message")
-    public ResponseEntity<ChatMessageDto> saveMessage(@Validated @RequestBody ChatSendRequest req) { //@Validated 스프링의 검증 트리거 @RequestBody에 붙이면 DTO의 @NotNull, @NotBlank 같은 Bean Validation 제약을 검사
+    @MessageMapping("/message")
+    public ResponseEntity<ChatMessageDto> saveMessage(@Validated @RequestBody ChatSendRequest req) {
         ChatMessageDto saved = chatService.saveMessage(req);
         return ResponseEntity.ok(saved);
     }

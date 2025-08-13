@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -21,9 +23,9 @@ import boot.data.jwt.JwtTokenProvider;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true) // <= 추가
 public class SecurityConfig {
 
-    // JwtAuthenticationFilter Bean을 통해 JwtTokenProvider를 간접 참조
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider provider) {
         return new JwtAuthenticationFilter(provider);
@@ -37,7 +39,8 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/**","/*", "/auth/**").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // CORS
+                .requestMatchers("/auth/**", "/public/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
