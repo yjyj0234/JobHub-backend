@@ -29,7 +29,7 @@ public class CommunityCommentController {
             @RequestBody CreateCommentRequest req
     ) {
         // 실제 서비스에선 userId는 토큰에서 꺼내는 게 안정적.
-        CommunityCommentDto saved = commentService.addComment(postId, req.userId(), req.content());
+        CommunityCommentDto saved = commentService.addComment(postId, req.content());
         return ResponseEntity.ok(saved);
     }
 
@@ -40,7 +40,7 @@ public class CommunityCommentController {
             @PathVariable("commentId") Long commentId,
             @RequestBody UpdateCommentRequest req
     ) {
-        CommunityCommentDto updated = commentService.updateComment(commentId, req.editorUserId(), req.content());
+        CommunityCommentDto updated = commentService.updateComment(commentId, req.content());
         return ResponseEntity.ok(updated);
     }
 
@@ -51,7 +51,7 @@ public class CommunityCommentController {
             @PathVariable("commentId") Long commentId,
             @RequestBody DeleteCommentRequest req
     ) {
-        commentService.deleteComment(commentId, req.requesterUserId(), req.isAdmin());
+        commentService.deleteComment(commentId);
         return ResponseEntity.noContent().build();
     }
 

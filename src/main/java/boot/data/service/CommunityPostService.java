@@ -18,7 +18,9 @@ import boot.data.entity.Users;
 import boot.data.repository.CommunityPostsRepository;
 import boot.data.repository.UserProfilesRepository;
 import boot.data.repository.UsersRepository;
+import boot.data.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
+
 
 @Service
 @RequiredArgsConstructor
@@ -27,12 +29,14 @@ public class CommunityPostService {
     private final CommunityPostsRepository communityPostsRepository;
     private final UsersRepository usersRepository;
     private final UserProfilesRepository userProfilesRepository;
-
+    private final CurrentUser currentUser; 
+    // 서비스 레이어에서 현재 로그인 사용자에 접근하기 위한 헬퍼
     // === Create ===
     @Transactional
     public CommunityPostDto insertDto(CommunityPostDto dto) {
-        Users user = usersRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException(dto.getUserId() + "는 존재하지 않습니다"));
+        Long id =  currentUser.idOrThrow(); 
+        Users user = usersRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(id + "는 존재하지 않습니다"));
 
         CommunityPosts post = CommunityPosts.builder()
                 .user(user)
@@ -62,7 +66,7 @@ public class CommunityPostService {
     public CommunityPostDto getOne(Long id) {
         CommunityPosts p = communityPostsRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found")); // 404로
-
+        
         // 유저 정보 가져오기
         String userName = userProfilesRepository.findByUserId(p.getUser().getId())
                 .map(UserProfiles::getName)
@@ -79,32 +83,33 @@ public class CommunityPostService {
     }
 
     // === Read List (최신순) ===
-    @Transactional(readOnly = true)
-    public List<CommunityPostDto> getList() {
-        List<CommunityPosts> posts = communityPostsRepository.findAll(
-                Sort.by(Sort.Direction.DESC, "id")
-                
-        );
+   @Transactional(readOnly = true)
+public List<CommunityPostDto> getList() {
+    List<CommunityPosts> posts = communityPostsRepository.findAll(
+            Sort.by(Sort.Direction.DESC, "id"));
 
-        String userName = userProfilesRepository.findByUserId(posts.get(0).getUser().getId())
-                .map(UserProfiles::getName)
-                .orElse("탈퇴회원"); 
+    List<CommunityPostDto> result = new ArrayList<>();
+    for (CommunityPosts post : posts) {
+        Long uid = (post.getUser() != null) ? post.getUser().getId() : null;
+        String userName = (uid == null)
+                ? "탈퇴회원"
+                : userProfilesRepository.findByUserId(uid)
+                    .map(UserProfiles::getName)
+                    .orElse("탈퇴회원");
 
-        List<CommunityPostDto> result = new ArrayList<>();
-        for (CommunityPosts post : posts) {
-            CommunityPostDto dto = new CommunityPostDto();
-            dto.setId(post.getId());
-            dto.setUserId(post.getUser() != null ? post.getUser().getId() : null);
-            dto.setTitle(post.getTitle());
-            dto.setContent(post.getContent());
-            dto.setViewCount(post.getViewCount());
-            dto.setCreatedAt(post.getCreatedAt());
-            dto.setUpdatedAt(post.getUpdatedAt());
-            dto.setUserName(userName);
-            result.add(dto);
-        }
-        return result;
+        CommunityPostDto dto = new CommunityPostDto();
+        dto.setId(post.getId());
+        dto.setUserId(uid);
+        dto.setTitle(post.getTitle());
+        dto.setContent(post.getContent());
+        dto.setViewCount(Optional.ofNullable(post.getViewCount()).orElse(0));
+        dto.setCreatedAt(post.getCreatedAt());
+        dto.setUpdatedAt(post.getUpdatedAt());
+        dto.setUserName(userName);
+        result.add(dto);
     }
+    return result;
+}
 
     // === Update ===
     @Transactional
