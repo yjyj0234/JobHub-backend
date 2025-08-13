@@ -75,6 +75,6 @@ public class S3StorageService {
 
         return presigner.presignGetObject(req).url().toString();
     }
-//
+
     public record UploadResult(String key, String url, String originalName, String contentType, long size) {}
 }
