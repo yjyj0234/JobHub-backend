@@ -1,0 +1,32 @@
+server:
+  port: 8080
+  address: 0.0.0.0 # 외부에서 접근 가능하게 열기 추가(이우형)
+  servlet:
+    session:
+      timeout: 90m
+#mysql_setting
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://finalproject.c3m0eoo0uhk9.ap-northeast-2.rds.amazonaws.com:3306/final?serverTimezone=Asia/Seoul
+    username: tkddyd04
+    password: Tkddyd04!
+  #jpa_setting
+  jpa:
+    hibernate:
+      ddl-auto: update
+    generate-ddl: true
+    show-sql: true
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQLDialect
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  profiles:
+   include: secret  # 민감정보 secret 파일
+                  #jwt
+jwt:
+  secret: 123456789012345678901234567890123456789
+  expiration: 86400000 # 1 day in milliseconds
+
