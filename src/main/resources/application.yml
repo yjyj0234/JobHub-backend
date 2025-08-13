@@ -24,7 +24,13 @@ spring:
     show-sql: true
     database: mysql
     database-platform: org.hibernate.dialect.MySQLDialect
-  #jwt
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  profiles:
+   include: secret  # 민감정보 secret 파일
+                  #jwt
 jwt:
   secret: 123456789012345678901234567890123456789
   expiration: 86400000 # 1 day in milliseconds
