@@ -11,6 +11,11 @@ spring:
     url: jdbc:mysql://finalproject.c3m0eoo0uhk9.ap-northeast-2.rds.amazonaws.com:3306/final?serverTimezone=Asia/Seoul
     username: tkddyd04
     password: Tkddyd04!
+    hikariL:
+      max-lifetime: 540000     # 9분
+      idle-timeout: 300000     # 5분
+      validation-timeout: 3000
+      connection-timeout: 30000
   #jpa_setting
   jpa:
     hibernate:
