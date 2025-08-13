@@ -15,7 +15,7 @@ import java.util.HashMap;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/search")
+@RequestMapping("api/search")
 @RequiredArgsConstructor
 
 public class JobSearchController {
