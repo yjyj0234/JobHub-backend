@@ -48,8 +48,8 @@ public class CommunityCommentController {
     @DeleteMapping("/{commentId}")
     public ResponseEntity<Void> delete(
             @PathVariable("postId") Long postId,
-            @PathVariable("commentId") Long commentId,
-            @RequestBody DeleteCommentRequest req
+            @PathVariable("commentId") Long commentId
+            // @RequestBody DeleteCommentRequest req
     ) {
         commentService.deleteComment(commentId);
         return ResponseEntity.noContent().build();
@@ -58,5 +58,5 @@ public class CommunityCommentController {
     // ====== 요청 바디용 record DTO ======
     public record CreateCommentRequest(Long userId, String content) {}
     public record UpdateCommentRequest(Long editorUserId, String content) {}
-    public record DeleteCommentRequest(Long requesterUserId, boolean isAdmin) {}
+    // public record DeleteCommentRequest(Long requesterUserId, boolean isAdmin) {}
 }

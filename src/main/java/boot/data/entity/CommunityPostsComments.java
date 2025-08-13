@@ -50,10 +50,6 @@ public class CommunityPostsComments {
 	@Comment("댓글 내용")
 	private String content;
 	
-	@Column(name = "is_deleted", nullable = false)
-	@Comment("삭제 여부")
-	private boolean isDeleted = false;
-	
 	@Builder.Default
 	@Column(name = "created_at", nullable = false)
 	@Comment("작성일")

@@ -72,13 +72,22 @@ public class CommunityPostService {
                 .map(UserProfiles::getName)
                 .orElse("탈퇴회원");
 
+                Long currentUserId = null;
+                    try {
+                        currentUserId = currentUser.idOrThrow(); // 로그인 안 했으면 예외
+                    } catch (Exception e) {
+                        // 비로그인 사용자는 null 처리
+                    }
+        
         CommunityPostDto dto = new CommunityPostDto();
         dto.setId(p.getId());
         dto.setTitle(p.getTitle());
         dto.setContent(p.getContent());
         dto.setViewCount(Optional.ofNullable(p.getViewCount()).orElse(0));
         dto.setCreatedAt(Optional.ofNullable(p.getCreatedAt()).orElse(LocalDateTime.now()));
+        dto.setUserId(p.getUser() != null ? p.getUser().getId() : null);
         dto.setUserName(userName);
+        dto.setOwner(currentUserId != null && currentUserId.equals(p.getUser().getId()));
         return dto;
     }
 

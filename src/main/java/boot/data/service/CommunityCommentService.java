@@ -42,17 +42,14 @@ public class CommunityCommentService {
             boolean owner = (me != null) && me.equals(comments.getUser().getId());
 
     // ✅ 권한 체크 (프로젝트 정책에 맞게 보완)
-    String role = currentUser.roleOrNull(); // 예: "ADMIN", "USER", "ROLE_ADMIN"
-    boolean admin = role != null && (role.equals("ADMIN"));
+    String role = String.valueOf(currentUser.roleOrNull()); // 예: "ADMIN", "USER", "ROLE_ADMIN"
+    boolean admin = "ADMIN".equals(role) || "ROLE_ADMIN".equals(role);
 
         return CommunityCommentDto.builder()
                 .id(comments.getId())
                 .postId(comments.getPost().getId())
                 .userId(comments.getUser().getId())
                 .userName(userName)
-                .content(comments.isDeleted() ? "삭제된 댓글입니다." : comments.getContent())
-                .isDeleted(comments.isDeleted())
-                .createdAt(comments.getCreatedAt())
                 .updatedAt(comments.getUpdatedAt())
                 .isOwner(owner)   // ✅ 여기서 내려줌
                 .isAdmin(admin)
@@ -61,7 +58,7 @@ public class CommunityCommentService {
 
     // 각 게시글 댓글 조회
     public List<CommunityCommentDto> getCommentsByPost(Long postId) {
-        return commentsRepository.findByPost_IdAndIsDeletedFalseOrderByCreatedAtAsc(postId)
+        return commentsRepository.findByPost_IdOrderByCreatedAtAsc(postId)
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -82,7 +79,6 @@ public class CommunityCommentService {
                         .post(post)
                         .user(user)
                         .content(content)
-                        .isDeleted(false)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
                         .build()
@@ -94,7 +90,7 @@ public class CommunityCommentService {
     //댓글 수정
     @Transactional
     public CommunityCommentDto updateComment(Long commentId, String newContent) {
-        CommunityPostsComments comment = commentsRepository.findByIdAndIsDeletedFalse(commentId)
+        CommunityPostsComments comment = commentsRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없음: " + commentId));
 
         Long editorUserId = currentUser.idOrThrow();
@@ -113,12 +109,13 @@ public class CommunityCommentService {
         CommunityPostsComments comment = commentsRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없음: " + commentId));
         Long requesterUserId = currentUser.idOrThrow();
-        boolean isAdmin = currentUser.roleOrNull().equals("ADMIN");
+        String role = String.valueOf(currentUser.roleOrNull()); // null-safe
+            boolean isAdmin = "ADMIN".equals(role) || "ROLE_ADMIN".equals(role);
         if (!isAdmin && !comment.getUser().getId().equals(requesterUserId)) {
             throw new SecurityException("댓글 삭제 권한 없음");
         }
 
-        comment.setDeleted(true);
+       
         comment.setContent("");
         comment.setUpdatedAt(LocalDateTime.now());
     }

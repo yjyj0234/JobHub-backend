@@ -22,7 +22,6 @@ public class CommunityCommentDto {
     private Long postId; // 게시글 ID
     private Long userId; // 작성자 ID
     private String content; // 댓글 내용
-    private boolean isDeleted; // 삭제 여부
 
     private String userName; // 작성자 이름
 
