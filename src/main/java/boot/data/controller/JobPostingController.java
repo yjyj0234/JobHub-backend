@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import java.net.URI;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -22,7 +23,9 @@ public class JobPostingController {
 
     private final JobPostingService jobPostingService;
 
+    //PreAuthorize : 현재 인증된 사용자가 다음 중 하나라도 역할을 가지고 있으면 메서드 호출을 허용
     @PostMapping
+    @PreAuthorize("hasAnyRole('COMPANY','COMPANY_HR','EMPLOYER')")  
     public ResponseEntity<CreatePostingResponse> create(@Valid @RequestBody JobPostingCreateDto dto){
         Long id= jobPostingService.create(dto);
         return ResponseEntity

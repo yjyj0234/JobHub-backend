@@ -101,22 +101,29 @@ public class JobPostingService {
     @Transactional
     public Long create(JobPostingCreateDto dto) {
 
-         Long uid = currentUser.idOrThrow();
-        String urole = currentUser.roleOrNull();
-         if (!uid.equals(dto.getCreatedBy())) {
-        throw new SecurityException("작성자 정보 위조: 로그인 사용자와 createdBy가 다릅니다.");
-    }
-    // 최소 권한 체크(프로젝트 정책에 맞게 보강)
-    if (urole == null || (!urole.equalsIgnoreCase("COMPANY") && !urole.equalsIgnoreCase("COMPANY_HR") && !urole.equalsIgnoreCase("EMPLOYER"))) {
-        throw new SecurityException("기업 권한이 필요합니다.");
-    }
+        //로그인 사용자 조회
+        var au= currentUser.get()
+                .orElseThrow(()->new SecurityException("인증 정보가 없습니다"));
+        Long loginUserId=au.id();
 
-        // 0) 로드 : 회사/작성자
+        //권한 체크 : role
+        boolean allowed=
+                au.hasRole("COMPANY") ||au.hasRole("COMPANY_HR") || au.hasRole("EMPLOYER");
+        if(!allowed){
+            throw new SecurityException("기업 권한이 필요합니다.");
+        }
+
+          
+          dto.setCreatedBy(loginUserId);
+            dto.setCompanyId(loginUserId); // ★ 항상 로그인 사용자로 강제
+
+
+        // 0-3) 회사/작성자 엔티티 로드
         Companies company = companiesRepository.findById(dto.getCompanyId())
                 .orElseThrow(() -> new IllegalArgumentException("회사없음: " + dto.getCompanyId()));
 
-        Users creator = usersRepository.findById(dto.getCreatedBy())
-                .orElseThrow(() -> new IllegalArgumentException("작성자 없음: " + dto.getCreatedBy()));
+        Users creator = usersRepository.findById(loginUserId)
+                .orElseThrow(() -> new IllegalArgumentException("작성자 없음: " + loginUserId));
 
         // --- [추가/보강] 카테고리 정규화: 중복 제거 + 대표 1개 보장 ---
         if (dto.getCategories() == null || dto.getCategories().isEmpty()) {
@@ -168,22 +175,20 @@ public class JobPostingService {
         posting.setCreatedBy(creator);
         posting.setCreatedAt(LocalDateTime.now());
         posting.setUpdatedAt(LocalDateTime.now());
-        posting.setDescription(dto.getDescription()); // ← 추가
+        posting.setDescription(dto.getDescription()); 
         
 
-        // search_text (없으면 제목)
         String searchText = (dto.getSearchText() != null && !dto.getSearchText().isBlank())
                 ? dto.getSearchText()
                 : dto.getTitle();
         posting.setSearchText(searchText);
 
-        // --- [추가/보강] 마감 유형에 따른 일시 무효화 ---
         if (dto.getCloseType() == CloseType.UNTIL_FILLED || dto.getCloseType() == CloseType.CONTINUOUS) {
             posting.setOpenDate(null);
             posting.setCloseDate(null);
         }
 
-        jobPostingsRepository.save(posting); // id 생성
+        jobPostingsRepository.save(posting);
 
         // 2) job_posting_locations (대표 1건만 저장)
         final Integer regionId =
