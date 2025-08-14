@@ -17,6 +17,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -76,6 +77,10 @@ public class JobPostings {
     @Column(name = "updated_at",nullable = false)
     @Comment("업데이트 일시")
     private LocalDateTime updatedAt=LocalDateTime.now();
+
+    
+    @Column(name = "description", columnDefinition = "MEDIUMTEXT")
+    private String description;
 
     /**
      * 채용공고와 지역의 다대다 관계

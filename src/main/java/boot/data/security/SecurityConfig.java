@@ -33,14 +33,15 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           JwtAuthenticationFilter jwtFilter) throws Exception {
+                                        JwtAuthenticationFilter jwtFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // CORS
-                .requestMatchers("/auth/**", "/public/**").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll() // CORS
+                .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
+                .requestMatchers("/auth/**","/public/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
