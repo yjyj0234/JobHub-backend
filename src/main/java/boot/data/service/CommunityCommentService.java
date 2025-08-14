@@ -46,13 +46,29 @@ public class CommunityCommentService {
 //                 .build();
 //     }
 
-//     // 각 게시글 댓글 조회
-//     public List<CommunityCommentDto> getCommentsByPost(Long postId) {
-//         return commentsRepository.findByPost_IdOrderByCreatedAtAsc(postId)
-//                 .stream()
-//                 .map(this::toDto)
-//                 .toList();
-//     }
+    // 각 게시글 댓글 조회
+    public List<CommunityCommentDto> getCommentsByPost(Long postId) {
+        
+        return commentsRepository.findByPost_IdOrderByCreatedAtAsc(postId)
+                .stream()
+                .map(comment -> {
+                    String userName = userProfileRepository.findByUserId(comment.getUser().getId())
+                            .map(profile -> profile.getName()) // UserProfiles 엔티티에서 이름 가져오기
+                            .orElse("알 수 없음");
+
+                    return CommunityCommentDto.builder()
+                            .id(comment.getId())
+                            .postId(comment.getPost().getId())
+                            .userId(comment.getUser().getId())
+                            .userName(userName)
+                            .content(comment.getContent())
+                            .createdAt(comment.getCreatedAt())
+                            .updatedAt(comment.getUpdatedAt())
+                            .build();
+                })
+                .toList();
+               
+    }
 
     //댓글 추가 
     @Transactional

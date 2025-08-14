@@ -26,12 +26,12 @@ public class CommunityCommentController {
     private final CommunityCommentService commentService;
     private final CurrentUser currentUser; // 로그인 사용자 id 헬퍼
 
-    // // 1) 특정 게시글의 댓글 목록
-    // // GET /community/{postId}/comments
-    // @GetMapping("/{postId}/comments")
-    // public List<CommunityCommentDto> listByPost(@PathVariable("postId") Long postId) {
-    //     return commentService.getCommentsByPost(postId);
-    // }
+    // 1) 특정 게시글의 댓글 목록
+    // GET /community/{postId}/comments
+    @GetMapping("/{postId}/comments")
+    public List<CommunityCommentDto> listByPost(@PathVariable("postId") Long postId) {
+        return commentService.getCommentsByPost(postId);
+    }
 
     // 2) 댓글 작성
     // POST /community/{postId}/comments
