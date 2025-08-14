@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -128,6 +129,7 @@ public List<CommunityPostDto> getList() {
 
         if (dto.getTitle() != null) post.setTitle(dto.getTitle());
         if (dto.getContent() != null) post.setContent(dto.getContent());
+        post.setUpdatedAt(LocalDateTime.now());
 
         CommunityPostDto res = new CommunityPostDto();
         res.setId(post.getId());
@@ -135,19 +137,21 @@ public List<CommunityPostDto> getList() {
         res.setTitle(post.getTitle());
         res.setContent(post.getContent());
         res.setViewCount(post.getViewCount());
-        res.setCreatedAt(post.getCreatedAt());
         res.setUpdatedAt(post.getUpdatedAt());
         return res;
     }
 
     // === Delete ===
-    @Transactional
     public void delete(Long id) {
-        if (!communityPostsRepository.existsById(id)) {
-            throw new IllegalArgumentException("이미 삭제되었거나 존재하지 않음: " + id);
+    CommunityPosts post = communityPostsRepository.findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("이미 삭제되었거나 존재하지 않음: " + id));
+
+    Long currentUserId = currentUser.idOrThrow(); 
+    if (!post.getUser().getId().equals(currentUserId)) {
+        throw new AccessDeniedException("본인 글만 삭제 가능");
+     }
+            communityPostsRepository.delete(post);
         }
-        communityPostsRepository.deleteById(id);
-    }
 
     // === View Count 증가 ===
     @Transactional

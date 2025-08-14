@@ -1,7 +1,9 @@
 package boot.data.repository;
 
-import java.util.List;
 
+
+
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -9,10 +11,10 @@ import org.springframework.stereotype.Repository;
 import boot.data.entity.CommunityPostsComments;
 
 @Repository
-public interface CommunityPostCommentsRepository extends JpaRepository<CommunityPostsComments, Long>{
+public interface CommunityPostCommentsRepository extends JpaRepository<CommunityPostsComments, Long> {
 
-     // 게시글의 "삭제 안 된" 댓글을 생성일 오름차순으로
-   List<CommunityPostsComments> findByPost_IdOrderByCreatedAtAsc(Long postId);
+    List<CommunityPostsComments> findByPost_IdOrderByCreatedAtAsc(Long postId);
 
-   
+    // 작성자 본인의 댓글만 원자적으로 삭제 (단일 쿼리)
+    Long deleteByIdAndUser_Id(Long id, Long userId);
 }

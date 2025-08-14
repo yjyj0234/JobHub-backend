@@ -1,6 +1,6 @@
 package boot.data.dto;
 
-import java.time.LocalDate;
+
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -33,8 +33,6 @@ public class CommunityCommentDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt; // 수정일
 
-
-
     private boolean isOwner; // 작성자 여부
-    private boolean isAdmin; // 관리자 여부
+
 }

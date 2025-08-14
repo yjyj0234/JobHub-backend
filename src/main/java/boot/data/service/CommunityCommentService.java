@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import boot.data.dto.CommunityCommentDto;
 import boot.data.entity.CommunityPosts;
 import boot.data.entity.CommunityPostsComments;
+import boot.data.entity.UserProfiles;
 import boot.data.entity.Users;
 import boot.data.repository.CommunityPostCommentsRepository;
 import boot.data.repository.CommunityPostsRepository;
@@ -19,104 +20,108 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-
 @Transactional(readOnly = true)
 public class CommunityCommentService {
 
     private final CommunityPostCommentsRepository commentsRepository;
     private final CommunityPostsRepository postsRepository;
     private final UsersRepository usersRepository;
-    private final UserProfilesRepository userProfileRepository;
     private final CurrentUser currentUser;
+    private final UserProfilesRepository userProfilesRepository;
 
-    // 댓글 DTO 변환
-    private CommunityCommentDto toDto(CommunityPostsComments comments) {
-        String userName = userProfileRepository.findByUserId(comments.getUser().getId())
-                .map(profile -> profile.getName()) // UserProfiles 엔티티에서 이름 가져오기
-                .orElse("알 수 없음");
-
-                 // ✅ 로그인 안 한 경우도 대비 (idOrNull 만들었다고 가정, 없으면 try/catch로 감싸)
-            Long me = null;
-            try { me = currentUser.idOrThrow(); } catch (Exception ignore) {}
-
-            boolean owner = (me != null) && me.equals(comments.getUser().getId());
-
-    // ✅ 권한 체크 (프로젝트 정책에 맞게 보완)
-    String role = String.valueOf(currentUser.roleOrNull()); // 예: "ADMIN", "USER", "ROLE_ADMIN"
-    boolean admin = "ADMIN".equals(role) || "ROLE_ADMIN".equals(role);
-
-        return CommunityCommentDto.builder()
-                .id(comments.getId())
-                .postId(comments.getPost().getId())
-                .userId(comments.getUser().getId())
-                .userName(userName)
-                .updatedAt(comments.getUpdatedAt())
-                .isOwner(owner)   // ✅ 여기서 내려줌
-                .isAdmin(admin)
-                .build();
-    }
-
-    // 각 게시글 댓글 조회
+    /** 목록 */
     public List<CommunityCommentDto> getCommentsByPost(Long postId) {
+        // 비로그인도 조회 가능하도록 null 허용
+
+       Long me = currentUser.idOrThrow();
+
+       String userName = userProfilesRepository.findByUserId(postId)
+                .map(UserProfiles::getName)
+                .orElse("탈퇴회원");
+
         return commentsRepository.findByPost_IdOrderByCreatedAtAsc(postId)
                 .stream()
-                .map(this::toDto)
+                .map(c -> CommunityCommentDto.builder()
+                        .id(c.getId())
+                        .postId(c.getPost().getId())
+                        .userId(c.getUser().getId())
+                        .content(c.getContent())
+                        .createdAt(c.getCreatedAt())
+                        .updatedAt(c.getUpdatedAt())
+                        .isOwner(me != null && me.equals(c.getUser().getId()))
+                        .userName(userName)
+                        .build()
+                )
                 .toList();
     }
 
-    //댓글 추가 
+    /** 등록 (작성자 = 현재 로그인 사용자) */
     @Transactional
     public CommunityCommentDto addComment(Long postId, String content) {
-        CommunityPosts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없음: " + postId));
-
-        Long userid = currentUser.idOrThrow();        
-        Users user = usersRepository.findById(userid)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없음: " + userid));
-
-        CommunityPostsComments saved = commentsRepository.save(
-                CommunityPostsComments.builder()
-                        .post(post)
-                        .user(user)
-                        .content(content)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .build()
-        );
-
-        return toDto(saved);
+        String c = content == null ? "" : content.trim();
+    if (c.isEmpty()) {
+        throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
     }
 
-    //댓글 수정
+    CommunityPosts post = postsRepository.findById(postId)
+            .orElseThrow(() -> new IllegalArgumentException("게시글 없음: " + postId));
+
+    Long uid = currentUser.idOrThrow();
+    Users user = usersRepository.findById(uid)
+            .orElseThrow(() -> new IllegalArgumentException("사용자 없음: " + uid));
+
+    CommunityPostsComments saved = commentsRepository.save(
+            CommunityPostsComments.builder()
+                    .post(post)
+                    .user(user)
+                    .content(c) // ← 정리된 값 사용
+                    .createdAt(LocalDateTime.now())
+                    .build()
+    );
+
+    return CommunityCommentDto.builder()
+            .id(saved.getId())
+            .postId(postId)
+            .userId(uid)
+            .content(saved.getContent())
+            .createdAt(saved.getCreatedAt())
+            .updatedAt(saved.getUpdatedAt())
+            .isOwner(true)
+            .build();
+    }
+
+    /** 수정 (작성자만) */
     @Transactional
     public CommunityCommentDto updateComment(Long commentId, String newContent) {
-        CommunityPostsComments comment = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없음: " + commentId));
+        CommunityPostsComments c = commentsRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글 없음: " + commentId));
 
-        Long editorUserId = currentUser.idOrThrow();
-        if (!comment.getUser().getId().equals(editorUserId)) {
+        Long uid = currentUser.idOrThrow();
+        if (!c.getUser().getId().equals(uid)) {
             throw new SecurityException("댓글 수정 권한 없음");
         }
 
-        comment.setContent(newContent);
-        comment.setUpdatedAt(LocalDateTime.now());
-        return toDto(comment);
+        c.setContent(newContent);
+        c.setUpdatedAt(LocalDateTime.now());
+
+        return CommunityCommentDto.builder()
+                .id(c.getId())
+                .postId(c.getPost().getId())
+                .userId(c.getUser().getId())
+                .content(c.getContent())
+                .createdAt(c.getCreatedAt())
+                .updatedAt(c.getUpdatedAt())
+                .isOwner(true) // 내 댓글
+                .build();
     }
 
-    //댓글 삭제
+    /** 삭제 (작성자만, DB 한 방으로 원자적) */
     @Transactional
     public void deleteComment(Long commentId) {
-        CommunityPostsComments comment = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없음: " + commentId));
-        Long requesterUserId = currentUser.idOrThrow();
-        String role = String.valueOf(currentUser.roleOrNull()); // null-safe
-            boolean isAdmin = "ADMIN".equals(role) || "ROLE_ADMIN".equals(role);
-        if (!isAdmin && !comment.getUser().getId().equals(requesterUserId)) {
-            throw new SecurityException("댓글 삭제 권한 없음");
+        Long uid = currentUser.idOrThrow();
+        long deleted = commentsRepository.deleteByIdAndUser_Id(commentId, uid);
+        if (deleted == 0) {
+            throw new SecurityException("댓글 삭제 권한 없음 또는 존재하지 않는 댓글");
         }
-
-       
-        comment.setContent("");
-        comment.setUpdatedAt(LocalDateTime.now());
     }
 }
