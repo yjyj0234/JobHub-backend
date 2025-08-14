@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")  
 @RequestMapping("/community")
 @RequiredArgsConstructor
 @Validated
@@ -25,21 +26,21 @@ public class CommunityCommentController {
     private final CommunityCommentService commentService;
     private final CurrentUser currentUser; // 로그인 사용자 id 헬퍼
 
-    // 1) 특정 게시글의 댓글 목록
-    // GET /community/{postId}/comments
-    @GetMapping("/{postId}/comments")
-    public List<CommunityCommentDto> listByPost(@PathVariable("postId") Long postId) {
-        return commentService.getCommentsByPost(postId);
-    }
+    // // 1) 특정 게시글의 댓글 목록
+    // // GET /community/{postId}/comments
+    // @GetMapping("/{postId}/comments")
+    // public List<CommunityCommentDto> listByPost(@PathVariable("postId") Long postId) {
+    //     return commentService.getCommentsByPost(postId);
+    // }
 
     // 2) 댓글 작성
     // POST /community/{postId}/comments
-    // body: { "content": "댓글 내용" }
+
     @PostMapping("/{postId}/comments")
     public CommunityCommentDto create(@PathVariable("postId") Long postId,
-                                      @Valid @RequestBody CreateCommentRequest req) {
+                                      @RequestBody CommunityCommentDto dto) {
         // 비로그인 시 내부에서 예외
-        return commentService.addComment(postId, req.getContent());
+        return commentService.addComment(postId, dto);
     }
 
     // 3) 댓글 삭제(Soft delete: 내용 비우기)

@@ -29,52 +29,62 @@ public class CommunityCommentService {
     private final UserProfilesRepository userProfileRepository; 
     private final CurrentUser currentUser;
 
-    // 댓글 DTO 변환
-    private CommunityCommentDto toDto(CommunityPostsComments comments) {
-        String userName = userProfileRepository.findByUserId(comments.getUser().getId())
-                .map(profile -> profile.getName()) // UserProfiles 엔티티에서 이름 가져오기
-                .orElse("알 수 없음");
+//     // 댓글 DTO 변환
+//     private CommunityCommentDto toDto(CommunityPostsComments comments) {
+//         String userName = userProfileRepository.findByUserId(comments.getUser().getId())
+//                 .map(profile -> profile.getName()) // UserProfiles 엔티티에서 이름 가져오기
+//                 .orElse("알 수 없음");
 
-        return CommunityCommentDto.builder()
-                .id(comments.getId())
-                .postId(comments.getPost().getId())
-                .userId(comments.getUser().getId())
-                .userName(userName)
-                .content(comments.getContent())
-                .createdAt(comments.getCreatedAt())
-                .updatedAt(comments.getUpdatedAt())
-                .build();
-    }
+//         return CommunityCommentDto.builder()
+//                 .id(comments.getId())
+//                 .postId(comments.getPost().getId())
+//                 .userId(comments.getUser().getId())
+//                 .userName(userName)
+//                 .content(comments.getContent())
+//                 .createdAt(comments.getCreatedAt())
+//                 .updatedAt(comments.getUpdatedAt())
+//                 .build();
+//     }
 
-    // 각 게시글 댓글 조회
-    public List<CommunityCommentDto> getCommentsByPost(Long postId) {
-        return commentsRepository.findByPost_IdOrderByCreatedAtAsc(postId)
-                .stream()
-                .map(this::toDto)
-                .toList();
-    }
+//     // 각 게시글 댓글 조회
+//     public List<CommunityCommentDto> getCommentsByPost(Long postId) {
+//         return commentsRepository.findByPost_IdOrderByCreatedAtAsc(postId)
+//                 .stream()
+//                 .map(this::toDto)
+//                 .toList();
+//     }
 
     //댓글 추가 
     @Transactional
-    public CommunityCommentDto addComment(Long postId, String content) {
+    public CommunityCommentDto addComment(Long postId, CommunityCommentDto dto) {
         CommunityPosts post = postsRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없음: " + postId));
+        if (dto == null || dto.getContent() == null || dto.getContent().trim().isEmpty()) {
+        throw new IllegalArgumentException("댓글 내용을 입력해줘.");
+        }
 
         Long userId = currentUser.idOrThrow();
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없음: " + userId));
+                Users users=   usersRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없음: " + userId));
 
-        CommunityPostsComments saved = commentsRepository.save(
-                CommunityPostsComments.builder()
-                        .post(post)
-                        .user(user)
-                        .content(content)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .build()
-        );
+        CommunityPostsComments comment = CommunityPostsComments.builder()
+                .post(post)
+                .user(users)
+                .content(dto.getContent())
+                .build();    
+        comment.setCreatedAt(LocalDateTime.now());
+        comment.setUpdatedAt(LocalDateTime.now());  
+        
+        CommunityPostsComments saved = commentsRepository.save(comment);
 
-        return toDto(saved);
+        CommunityCommentDto res = new CommunityCommentDto();
+        res.setId(saved.getId());
+        res.setPostId(saved.getPost().getId());
+        res.setUserId(saved.getUser().getId());
+        res.setContent(saved.getContent());
+        res.setCreatedAt(saved.getCreatedAt());
+        res.setUpdatedAt(saved.getUpdatedAt());
+        return res;
+
     }
 
    

@@ -40,9 +40,8 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll() // CORS
-                .requestMatchers( "/community/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/search/**","/jobpostinglist/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/search/**","/community/**").permitAll()
                 .requestMatchers("/auth/**","/public/**").permitAll()
                 .anyRequest().authenticated()
             )
