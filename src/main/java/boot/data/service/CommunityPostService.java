@@ -2,7 +2,11 @@ package boot.data.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.data.domain.Sort;
@@ -16,6 +20,7 @@ import boot.data.dto.CommunityPostDto;
 import boot.data.entity.CommunityPosts;
 import boot.data.entity.UserProfiles;
 import boot.data.entity.Users;
+import boot.data.repository.CommunityPostCommentsRepository;
 import boot.data.repository.CommunityPostsRepository;
 import boot.data.repository.UserProfilesRepository;
 import boot.data.repository.UsersRepository;
@@ -31,6 +36,7 @@ public class CommunityPostService {
     private final UsersRepository usersRepository;
     private final UserProfilesRepository userProfilesRepository;
     private final CurrentUser currentUser; 
+    private final CommunityPostCommentsRepository commentsRepositor; // 댓글 수를 가져오기 위한 레포지토리
     // 서비스 레이어에서 현재 로그인 사용자에 접근하기 위한 헬퍼
     // === Create ===
     @Transactional
@@ -97,6 +103,19 @@ public class CommunityPostService {
 public List<CommunityPostDto> getList() {
     List<CommunityPosts> posts = communityPostsRepository.findAll(
             Sort.by(Sort.Direction.DESC, "id"));
+            if (posts.isEmpty()) return Collections.emptyList();
+
+    // 1) 포스트 ID 모으기
+    List<Long> postIds = posts.stream().map(CommunityPosts::getId).toList();
+
+    // 2) 댓글 수 한 번에 집계해서 Map으로
+    List<Object[]> rows = commentsRepositor.countByPostIdIn(postIds);
+    Map<Long, Long> commentCountMap = new HashMap<>();
+    for (Object[] row : rows) {
+        Long postId = (Long) row[0];
+        Long cnt    = (Long) row[1];
+        commentCountMap.put(postId, cnt);
+    }
 
     List<CommunityPostDto> result = new ArrayList<>();
     for (CommunityPosts post : posts) {
@@ -116,6 +135,7 @@ public List<CommunityPostDto> getList() {
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
         dto.setUserName(userName);
+        dto.setCommentCount(commentCountMap.getOrDefault(post.getId(), 0L)); // 댓글 수 설정
         result.add(dto);
     }
     return result;

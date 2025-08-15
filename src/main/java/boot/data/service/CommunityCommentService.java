@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import boot.data.dto.CommunityCommentDto;
 import boot.data.entity.CommunityPosts;
 import boot.data.entity.CommunityPostsComments;
+import boot.data.entity.UserProfiles;
 import boot.data.entity.Users;
 import boot.data.repository.CommunityPostCommentsRepository;
 import boot.data.repository.CommunityPostsRepository;
@@ -29,27 +30,11 @@ public class CommunityCommentService {
     private final UserProfilesRepository userProfileRepository; 
     private final CurrentUser currentUser;
 
-//     // 댓글 DTO 변환
-//     private CommunityCommentDto toDto(CommunityPostsComments comments) {
-//         String userName = userProfileRepository.findByUserId(comments.getUser().getId())
-//                 .map(profile -> profile.getName()) // UserProfiles 엔티티에서 이름 가져오기
-//                 .orElse("알 수 없음");
-
-//         return CommunityCommentDto.builder()
-//                 .id(comments.getId())
-//                 .postId(comments.getPost().getId())
-//                 .userId(comments.getUser().getId())
-//                 .userName(userName)
-//                 .content(comments.getContent())
-//                 .createdAt(comments.getCreatedAt())
-//                 .updatedAt(comments.getUpdatedAt())
-//                 .build();
-//     }
 
     // 각 게시글 댓글 조회
     public List<CommunityCommentDto> getCommentsByPost(Long postId) {
         
-        return commentsRepository.findByPost_IdOrderByCreatedAtAsc(postId)
+        return commentsRepository.findByPost_IdOrderByCreatedAtDesc(postId)
                 .stream()
                 .map(comment -> {
                     String userName = userProfileRepository.findByUserId(comment.getUser().getId())
@@ -76,7 +61,7 @@ public class CommunityCommentService {
         CommunityPosts post = postsRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없음: " + postId));
         if (dto == null || dto.getContent() == null || dto.getContent().trim().isEmpty()) {
-        throw new IllegalArgumentException("댓글 내용을 입력해줘.");
+        throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
         }
 
         Long userId = currentUser.idOrThrow();
@@ -91,12 +76,16 @@ public class CommunityCommentService {
         comment.setUpdatedAt(LocalDateTime.now());  
         
         CommunityPostsComments saved = commentsRepository.save(comment);
+         String userName = userProfileRepository.findByUserId(saved.getUser().getId())
+                .map(profile -> profile.getName())
+                .orElse("알 수 없음");
 
         CommunityCommentDto res = new CommunityCommentDto();
         res.setId(saved.getId());
         res.setPostId(saved.getPost().getId());
         res.setUserId(saved.getUser().getId());
         res.setContent(saved.getContent());
+        res.setUserName(userName);
         res.setCreatedAt(saved.getCreatedAt());
         res.setUpdatedAt(saved.getUpdatedAt());
         return res;
