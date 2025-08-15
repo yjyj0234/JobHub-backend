@@ -3,6 +3,7 @@ package boot.data.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import boot.data.type.CloseType;
 import boot.data.type.EducationLevel;
@@ -12,6 +13,7 @@ import boot.data.type.PostingStatus;
 import boot.data.type.SalaryType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -19,10 +21,12 @@ import lombok.Data;
 public class JobPostingCreateDto {
     
    
-    @NotNull
+    @Null(message = "서버에서 설정합니다")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long companyId;
 
-    @NotNull
+    @Null(message = "서버에서 설정합니다")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long createdBy; // Users.id
 
     @NotBlank
