@@ -40,6 +40,14 @@ public class CommunityCommentService {
                     String userName = userProfileRepository.findByUserId(comment.getUser().getId())
                             .map(profile -> profile.getName()) // UserProfiles 엔티티에서 이름 가져오기
                             .orElse("알 수 없음");
+                            Long currentUserId = null;
+                            try {
+                                currentUserId = currentUser.idOrThrow();
+                            } catch (Exception e) {
+                                // 현재 사용자가 로그인하지 않은 경우
+                            }
+
+
 
                     return CommunityCommentDto.builder()
                             .id(comment.getId())
@@ -49,6 +57,7 @@ public class CommunityCommentService {
                             .content(comment.getContent())
                             .createdAt(comment.getCreatedAt())
                             .updatedAt(comment.getUpdatedAt())
+                            .isOwner(currentUserId != null && comment.getUser().getId().equals(currentUserId))
                             .build();
                 })
                 .toList();
@@ -88,6 +97,7 @@ public class CommunityCommentService {
         res.setUserName(userName);
         res.setCreatedAt(saved.getCreatedAt());
         res.setUpdatedAt(saved.getUpdatedAt());
+        res.setOwner(true);
         return res;
 
     }

@@ -4,6 +4,7 @@ package boot.data.dto;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,6 +34,7 @@ public class CommunityCommentDto {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt; // 수정일
 
+    @JsonProperty("isOwner") // 작성자 여부를 나타내는 필드
     private boolean isOwner; // 작성자 여부
 
 }
