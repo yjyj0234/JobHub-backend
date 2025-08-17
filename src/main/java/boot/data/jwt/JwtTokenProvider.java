@@ -38,13 +38,17 @@ public class JwtTokenProvider {
 
     // userId를 uid로, 이메일은 subject로, role은 claim으로 넣기
     public String createToken(Long userId, String email, String role) {
+        String normalized = (role != null && role.startsWith("ROLE_"))
+            ? role.substring(5)
+            : role;
+    
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
-
+    
         return Jwts.builder()
-                .setSubject(email)               // 표시용/로그용
-                .claim("uid", userId)            // 프론트/백에서 꺼내 쓸 사용자 PK
-                .claim("role", role)             // 권한(단수). 여러개면 roles(List)로!
+                .setSubject(email)
+                .claim("uid", userId)
+                .claim("role", normalized) // ← 접두어 없이 저장
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -79,22 +83,33 @@ public class JwtTokenProvider {
         return getClaims(token).get("role", String.class);
     }
 
-    private String normalizeRole(String role) {
-        if (role == null || role.isBlank()) return null;
-        return role.startsWith("ROLE_") ? role : "ROLE_" + role;
-    }
+    // private String normalizeRole(String role) {
+    //     if (role == null || role.isBlank()) return null;
+    //     return role.startsWith("ROLE_") ? role : "ROLE_" + role;
+    // }
+
+    
     // 필요하다면 여기서 Authentication 생성(Principal을 uid로 세팅)
-    public Authentication getAuthentication(String token) {
-        Long uid = getUserId(token);
-        String email = getEmail(token);
-        String role = normalizeRole(getRole(token)); // <- 정규화
-    
-        var authorities = (role == null)
-            ? java.util.List.<SimpleGrantedAuthority>of()
-            : java.util.List.of(new SimpleGrantedAuthority(role));
-    
-        // principal 을 AuthUser 로
-        var principal = new AuthUser(uid, email, role);
-        return new UsernamePasswordAuthenticationToken(principal, null, authorities);
-    }
+   // 인증 객체 생성 시도: 권한(authority)에도 접두어 없이 그대로 세팅
+public Authentication getAuthentication(String token) {
+    Long uid = getUserId(token);
+    String email = getEmail(token);
+
+    String roleClaim = getRole(token); // "USER" or "ROLE_USER" (과거 토큰 호환)
+    // 혹시 이전 토큰에 ROLE_로 들어있으면 제거
+    String authority = (roleClaim != null && roleClaim.startsWith("ROLE_"))
+        ? roleClaim.substring(5)
+        : roleClaim; // 최종: "USER"/"COMPANY"/"ADMIN"
+
+    var authorities = (authority == null)
+        ? java.util.List.<SimpleGrantedAuthority>of()
+        : java.util.List.of(new SimpleGrantedAuthority(authority)); // ← 접두어 없음
+
+    // AuthUser의 세 번째 파라미터는 문자열 "USER" 그대로 사용(또는 enum이면 enum으로)
+    var principal = new AuthUser(uid, email, authority);
+
+    var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
+    System.out.println("[JWT] set auth uid=" + uid + " authorities=" + auth.getAuthorities());
+    return auth;
+}
 }

@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import boot.data.dto.resume.ActivityRequest;
 import boot.data.dto.resume.ActivityResponse;
-import boot.data.dto.resume.ResumeCreateDto; // ← 패키지 위치 너가 쓴 곳과 동일하게 유지
+import boot.data.dto.resume.ResumeCreateDto; 
 import boot.data.entity.ResumeActivity;
 import boot.data.entity.Resumes;
 import boot.data.entity.Users;
