@@ -39,11 +39,12 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll() // CORS
-                .requestMatchers(HttpMethod.GET, "/api/search/**","/jobpostinglist/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
-                .requestMatchers("/auth/**","/public/**").permitAll()
-                .anyRequest().authenticated()
+            .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll() // CORS
+            .requestMatchers(HttpMethod.GET, "/api/search/**","/jobpostinglist/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll() // 상세정보 GET 허용
+            .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
+            .requestMatchers("/auth/**","/public/**").permitAll()
+            .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
