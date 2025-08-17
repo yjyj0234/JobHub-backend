@@ -1,29 +1,23 @@
 package boot.data.config;
 
-
-
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.socket.config.annotation.EnableWebSocket;
-import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
-
-import boot.data.handler.ChatHandler;
-import lombok.RequiredArgsConstructor;
-
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.*;
 
 @Configuration
-@EnableWebSocket
-@RequiredArgsConstructor
-public class WebSocketConfig implements WebSocketConfigurer {
-    private final ChatHandler chatHandler;
-    
-
+@EnableWebSocketMessageBroker
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(chatHandler, "/ws/chat")
-                .setAllowedOriginPatterns("*") // 실무에선 * 지양하고 도메인 명시
-                .withSockJS(); // 없어도 됨: WebSocket만 쓸 경우 생략 가능
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws")
+                .setAllowedOriginPatterns("http://localhost:3000")   // 운영 땐 도메인 제한 권장
+                .withSockJS();                   // SockJS 폴백
+    }
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic", "/queue"); // 구독 prefix
+        registry.setApplicationDestinationPrefixes("/app"); // 서버 수신 prefix
     }
 }
-

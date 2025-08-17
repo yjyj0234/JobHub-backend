@@ -39,6 +39,8 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/ws/**").permitAll() // WebSocket
+                .requestMatchers(HttpMethod.GET, "/group-chat/rooms").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll() // CORS
                 .requestMatchers(HttpMethod.GET, "/api/search/**","/jobpostinglist/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/search/**","/community/**").permitAll()

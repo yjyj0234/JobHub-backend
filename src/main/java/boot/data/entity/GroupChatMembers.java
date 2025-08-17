@@ -13,13 +13,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.Getter;
+
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "Group_chat_members")
+@Builder
+
 public class GroupChatMembers {
 	
 	@Id
@@ -39,5 +43,6 @@ public class GroupChatMembers {
 	
 	@Column(name = "joined_at", nullable = false)
 	@Comment("입장 시각")
+	@Builder.Default
 	private LocalDateTime joinedAt = LocalDateTime.now();
 } 
