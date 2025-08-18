@@ -50,27 +50,69 @@ public class JobSearchService {
             Sort.by(Sort.Direction.DESC, getSortField(request.getSortBy()))
         );
         
+        // 검색 조건 정규화
+        String keyword = (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
+                        ? request.getKeyword().trim() : null;
+        List<Integer> regionIds = (request.getRegionIds() != null && !request.getRegionIds().isEmpty()) 
+                                 ? request.getRegionIds() : null;
+        List<Integer> categoryIds = (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) 
+                                   ? request.getCategoryIds() : null;
+        
+        log.info("정규화된 조건: keyword='{}', regionIds={}, categoryIds={}", keyword, regionIds, categoryIds);
+        
         Page<JobPostings> result;
         
-        // 검색 조건에 따른 분기
-        if (hasOnlyKeyword(request)) {
-            // 키워드만 있는 경우
-            result = jobPostingSearchRepository.searchByKeyword(request.getKeyword(), pageRequest);
-            // 검색 키워드 통계 업데이트 (비동기)
-            updateSearchKeyword(request.getKeyword());
-        } else if (hasFilters(request)) {
-            // 필터 조건이 있는 경우
-            result = jobPostingSearchRepository.searchWithFilters(
-                request.getRegionIds(),
-                request.getCategoryIds(),
-                pageRequest
+        // 조건별 분기 처리
+        if (keyword == null && regionIds == null && categoryIds == null) {
+            // 전체 조회
+            log.info("전체 조회");
+            result = jobPostingSearchRepository.findAll(
+                PageRequest.of(request.getPage(), request.getSize(), 
+                Sort.by(Sort.Direction.DESC, "viewCount"))
             );
-        } else {
-            // 조건 없는 경우 (전체 조회)
-            result = jobPostingSearchRepository.findAll(pageRequest);
+        } 
+        else if (keyword != null && regionIds == null && categoryIds == null) {
+            // 키워드만
+            log.info("키워드만 검색: {}", keyword);
+            result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
+            //updateSearchKeyword(keyword);
+        }
+        else if (keyword == null && regionIds != null && categoryIds == null) {
+            // 지역만
+            log.info("지역만 검색: {}", regionIds);
+            result = jobPostingSearchRepository.searchByRegions(regionIds, pageRequest);
+        }
+        else if (keyword == null && regionIds == null && categoryIds != null) {
+            // 직무만
+            log.info("직무만 검색: {}", categoryIds);
+            result = jobPostingSearchRepository.searchByCategories(categoryIds, pageRequest);
+        }
+        else if (keyword != null && regionIds != null && categoryIds == null) {
+            // 키워드 + 지역
+            log.info("키워드+지역 검색: keyword={}, regions={}", keyword, regionIds);
+            result = jobPostingSearchRepository.searchByKeywordAndRegions(keyword, regionIds, pageRequest);
+            updateSearchKeyword(keyword);
+        }
+        else if (keyword != null && regionIds == null && categoryIds != null) {
+            // 키워드 + 직무
+            log.info("키워드+직무 검색: keyword={}, categories={}", keyword, categoryIds);
+            result = jobPostingSearchRepository.searchByKeywordAndCategories(keyword, categoryIds, pageRequest);
+            updateSearchKeyword(keyword);
+        }
+        else if (keyword == null && regionIds != null && categoryIds != null) {
+            // 지역 + 직무
+            log.info("지역+직무 검색: regions={}, categories={}", regionIds, categoryIds);
+            result = jobPostingSearchRepository.searchByRegionsAndCategories(regionIds, categoryIds, pageRequest);
+        }
+        else {
+            // 키워드 + 지역 + 직무 (전체 조합)
+            log.info("전체 조합 검색: keyword={}, regions={}, categories={}", keyword, regionIds, categoryIds);
+            // 임시로 키워드만 검색 처리 (나중에 개선)
+            result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
+            updateSearchKeyword(keyword);
         }
         
-        // Entity -> DTO 변환
+        log.info("검색 결과: {} 건", result.getTotalElements());
         return result.map(this::convertToDto);
     }
     
@@ -79,23 +121,48 @@ public class JobSearchService {
      * 필요한 정보만 선택적으로 포함
      */
     private JobSearchResponseDto convertToDto(JobPostings entity) {
+        // 지역 정보 안전하게 추출
+        List<String> regions = new ArrayList<>();
+        if (entity.getJobPostingLocations() != null) {
+            regions = entity.getJobPostingLocations().stream()
+                    .filter(jpl -> jpl.getRegion() != null)
+                    .map(jpl -> jpl.getRegion().getName())
+                    .collect(Collectors.toList());
+        }
+        
+        // 직무 카테고리 정보 안전하게 추출
+        List<String> categories = new ArrayList<>();
+        if (entity.getJobPostingCategories() != null) {
+            categories = entity.getJobPostingCategories().stream()
+                    .filter(jpc -> jpc.getJobCategory() != null)
+                    .map(jpc -> jpc.getJobCategory().getName())
+                    .collect(Collectors.toList());
+        }
+        
+        // 회사 로고 URL 안전하게 추출
+        String companyLogo = null;
+        if (entity.getCompany() != null && entity.getCompany().getCompanyDetails() != null) {
+            companyLogo = entity.getCompany().getCompanyDetails().getLogoUrl();
+        }
+        
+        // 회사명 안전하게 추출
+        String companyName = "회사명 없음";
+        if (entity.getCompany() != null && entity.getCompany().getName() != null) {
+            companyName = entity.getCompany().getName();
+        }
+        
         return JobSearchResponseDto.builder()
             .id(entity.getId())
-            .title(entity.getTitle())
-            .companyId(entity.getCompany().getId())
-            .companyName(entity.getCompany().getName())
-            .companyLogo(entity.getCompany().getCompanyDetails() != null ? 
-                        entity.getCompany().getCompanyDetails().getLogoUrl() : null)
-            .regions(entity.getJobPostingLocations().stream()
-                    .map(jpl -> jpl.getRegion().getName())
-                    .collect(Collectors.toList()))
-            .categories(entity.getJobPostingCategories().stream()
-                    .map(jpc -> jpc.getJobCategory().getName())
-                    .collect(Collectors.toList()))
-            .viewCount(entity.getViewCount())
-            .applicationCount(entity.getApplicationCount())
+            .title(entity.getTitle() != null ? entity.getTitle() : "제목 없음")
+            .companyId(entity.getCompany() != null ? entity.getCompany().getId() : null)
+            .companyName(companyName)
+            .companyLogo(companyLogo)
+            .regions(regions)
+            .categories(categories)
+            .viewCount(entity.getViewCount() != null ? entity.getViewCount() : 0)
+            .applicationCount(entity.getApplicationCount() != null ? entity.getApplicationCount() : 0)
             .closeDate(entity.getCloseDate())
-            .closeType(entity.getCloseType().name())
+            .closeType(entity.getCloseType() != null ? entity.getCloseType().name() : "")
             .isRemote(entity.isRemote())
             .createdAt(entity.getCreatedAt())
             .build();
@@ -121,36 +188,27 @@ public class JobSearchService {
     public void updateSearchKeyword(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) return;
         
-        searchKeywordRepository.findByKeyword(keyword)
-            .ifPresentOrElse(
-                SearchKeywords::incrementSearchCount,
-                () -> {
-                    SearchKeywords newKeyword = new SearchKeywords();
-                    newKeyword.setKeyword(keyword);
-                    newKeyword.incrementSearchCount();
-                    searchKeywordRepository.save(newKeyword);
-                }
-            );
-    }
-    
-    // === 헬퍼 메서드 ===
-    
-    private boolean hasOnlyKeyword(JobSearchRequestDto request) {
-        return request.getKeyword() != null && 
-                (request.getRegionIds() == null || request.getRegionIds().isEmpty()) &&
-                (request.getCategoryIds() == null || request.getCategoryIds().isEmpty());
-    }
-    
-    private boolean hasFilters(JobSearchRequestDto request) {
-        return (request.getRegionIds() != null && !request.getRegionIds().isEmpty()) ||
-                (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty());
+        try {
+            searchKeywordRepository.findByKeyword(keyword)
+                .ifPresentOrElse(
+                    SearchKeywords::incrementSearchCount,
+                    () -> {
+                        SearchKeywords newKeyword = new SearchKeywords();
+                        newKeyword.setKeyword(keyword);
+                        newKeyword.incrementSearchCount();
+                        searchKeywordRepository.save(newKeyword);
+                    }
+                );
+        } catch (Exception e) {
+            log.warn("검색 키워드 저장 실패: {}", keyword, e);
+        }
     }
     
     private String getSortField(String sortBy) {
         return switch(sortBy) {
-            case "viewCount" -> "viewCount";
-            case "applicationCount" -> "applicationCount";
-            case "closeDate" -> "closeDate";
+            case "viewCount", "views" -> "viewCount";
+            case "applicationCount", "applications" -> "applicationCount";
+            case "closeDate", "deadline" -> "closeDate";
             default -> "createdAt";
         };
     }
