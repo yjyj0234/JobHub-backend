@@ -3,8 +3,6 @@ package boot.data.repository;
 import java.util.List;
 import java.util.Optional;
 
-
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,9 +10,11 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import boot.data.entity.JobPostings;
 //채용 공고 Repository ,  JpaSpecificationExecutor 추가로 동적 쿼리 지원
+@Repository
 public interface JobPostingSearchRepository extends JpaRepository<JobPostings,Long>,JpaSpecificationExecutor<JobPostings> {
     //채용공고 상세조회 (연관 엔티티 한번에 조회)
     //N+1 문제 해결을 위한 Fetch Join 사용

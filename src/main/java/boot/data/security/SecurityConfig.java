@@ -4,7 +4,8 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -18,40 +19,91 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import boot.data.jwt.JwtAuthenticationFilter;
 import boot.data.jwt.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    private final JwtTokenProvider jwtTokenProvider;
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider provider) {
+        return new JwtAuthenticationFilter(provider);
+    }
+
+
+
+
+
+
+//주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여
+//한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationFilter jwtFilter) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/*","/**").permitAll()
+                // 프리플라이트 요청 허용
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // ✅ 공개 경로 여기서 추가하세요 
+                .requestMatchers("/auth/login", "/auth/register", "/auth/refresh").permitAll()
+                .requestMatchers("/public/**", "/docs/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers(HttpMethod.GET,
+                    "/api/search/**",
+                    "/jobpostinglist/**",     // 기존 경로 유지
+                    "/api/jobpostinglist/**"  
+                ).permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
+
+                 // 🔒 비공개or특수조건공개 -비공개나 역할로공개페이지는 여기서 추가하고 아래처럼 페이지랑 설명 적어주세요
+                   // 이력서: USER만 입장가능
+                 .requestMatchers("/resumes","/resumes/**").hasAuthority("USER")
+                      // resumes: 루트 + 하위 모두
+            .requestMatchers(HttpMethod.POST, "/resumes", "/resumes/**").hasAuthority("USER")
+            .requestMatchers(HttpMethod.PUT,  "/resumes/**").hasAuthority("USER")
+            .requestMatchers(HttpMethod.DELETE,"/resumes/**").hasAuthority("USER")
+            .requestMatchers(HttpMethod.GET,  "/resumes/**").permitAll() // 필요시 USER로
+
+               
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
+        CorsConfiguration c = new CorsConfiguration();
+        c.setAllowCredentials(true); // 쿠키 허용
+        c.setAllowedOrigins(List.of(
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000"
+        ));
+        c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        c.setAllowedHeaders(List.of("*"));
+        c.setExposedHeaders(List.of("Set-Cookie")); // 쿠키 기반 인증 시 편의
+        UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
+        s.registerCorsConfiguration("/**", c);
+        return s;
     }
 
     @Bean

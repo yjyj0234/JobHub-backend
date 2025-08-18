@@ -7,11 +7,7 @@ plugins {
 group = 'boot.data'
 version = '0.0.1-SNAPSHOT'
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
-}
+// Ensure JAVA_HOME is set to a valid JDK 17 installation in your environment.
 
 configurations {
 	compileOnly {
@@ -25,9 +21,9 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
- implementation 'org.springframework.boot:spring-boot-starter-security'
-     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5' // Jackson serializer
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -42,6 +38,10 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	
+	// AWS SDK v2 (BOM + S3)
+	implementation 'software.amazon.awssdk:s3:2.25.10' // 최신 안정화 버전으로 변경 가능
+    
 }
 
 tasks.named('test') {

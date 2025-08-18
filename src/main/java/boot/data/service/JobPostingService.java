@@ -1,68 +1,81 @@
 package boot.data.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import boot.data.dto.JobPostingCreateDto;
+import boot.data.dto.JobPostingCreateDto.CategoryItem;
 import boot.data.dto.JobPostingRequestDto;
+import boot.data.entity.Companies;
+import boot.data.entity.JobCategories;
+import boot.data.entity.JobPostingCategories;
 import boot.data.entity.JobPostingConditions;
+import boot.data.entity.JobPostingLocations;
 import boot.data.entity.JobPostings;
-// 아래 Repository들을 import 합니다.
+import boot.data.entity.Regions;
+import boot.data.entity.Users;
+import boot.data.repository.CompaniesRepository;
+import boot.data.repository.JobCategoryRepository;
+import boot.data.repository.JobPostingCategoriesRepository;
 import boot.data.repository.JobPostingConditionsRepository;
+import boot.data.repository.JobPostingLocationRepository;
 import boot.data.repository.JobPostingsRepository;
+import boot.data.repository.RegionRepository;
+import boot.data.repository.UsersRepository;
+import boot.data.security.CurrentUser;
 import boot.data.type.CloseType;
 import boot.data.type.PostingStatus;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor // final 필드에 대한 생성자를 자동으로 주입해주는 Lombok 어노테이션
 public class JobPostingService {
 
     private final JobPostingsRepository jobPostingsRepository;
+    private final JobPostingLocationRepository jobPostingLocationRepository;
+    private final JobPostingCategoriesRepository jobPostingCategoriesRepository;
     private final JobPostingConditionsRepository jobPostingConditionsRepository;
-    
-    // 실제 프로젝트에서는 Company와 Users 정보도 필요하므로 아래 Repository도 주입받아야 합니다.
-    // private final CompanyRepository companyRepository;
-    // private final UserRepository userRepository;
+
+    private final CompaniesRepository companiesRepository;
+    private final UsersRepository usersRepository;
+    private final RegionRepository regionRepository;
+    private final JobCategoryRepository jobCategoryRepository;
+    private final CurrentUser currentUser;
 
     /**
-     * DTO를 받아 채용 공고(JobPostings)와 공고 조건(JobPostingConditions)을
-     * 데이터베이스에 저장하는 메소드
-     * @param dto 클라이언트로부터 받은 채용 공고 데이터
-     * @return 생성된 JobPostings 엔티티
+     * (레거시/예시) DTO를 받아 채용 공고(JobPostings)와 공고 조건(JobPostingConditions)을 저장
      */
-    @Transactional // 이 메소드 내의 모든 DB 작업이 하나의 단위로 묶입니다. (All or Nothing)
+    @Transactional
     public JobPostings createJobPosting(JobPostingRequestDto dto) {
-        
+
+       
+
         // --- 1. 부모 엔티티(JobPostings) 생성 ---
         JobPostings jobPostings = new JobPostings();
-        
-        // DTO에서 받은 데이터로 JobPostings 엔티티의 필드를 채웁니다.
+
         jobPostings.setTitle(dto.getTitle());
         jobPostings.setRemote(dto.isRemote());
         jobPostings.setOpenDate(dto.getOpenDate());
         jobPostings.setCloseDate(dto.getCloseDate());
-        
+
         // Enum 타입 변환
-        // DTO의 Enum 값을 문자열로 변환(.name())한 뒤,
-        // Entity의 Enum 타입으로 다시 생성(valueOf())합니다.
         jobPostings.setStatus(PostingStatus.valueOf(dto.getStatus().name()));
         jobPostings.setCloseType(CloseType.valueOf(dto.getCloseType().name()));
-        
-        // [중요] 연관관계 필드(Company, Users)는 DTO에서 받은 ID를 이용해
-        // 실제 엔티티를 조회한 후 설정해야 합니다. (아래는 예시 코드)
-        // Companies company = companyRepository.findById(dto.getCompanyId()).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회사입니다."));
-        // Users user = userRepository.findById(dto.getCreatedById()).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-        // jobPostings.setCompany(company);
-        // jobPostings.setCreatedBy(user);
 
+        // (필요 시) company/createdBy 설정 로직 추가
 
-        // --- 2. 부모 엔티티를 DB에 저장 (이때 ID가 생성됩니다) ---
+        // --- 2. 저장 ---
         JobPostings savedJobPostings = jobPostingsRepository.save(jobPostings);
 
-
-        // --- 3. 자식 엔티티(JobPostingConditions) 생성 ---
+        // --- 3. 조건 저장 ---
         JobPostingConditions conditions = new JobPostingConditions();
-
-        // DTO에서 받은 데이터로 JobPostingConditions 엔티티의 필드를 채웁니다.
         conditions.setWorkSchedule(dto.getWorkSchedule());
         conditions.setEmploymentType(dto.getEmploymentType());
         conditions.setExperienceLevel(dto.getExperienceLevel());
@@ -74,14 +87,180 @@ public class JobPostingService {
         conditions.setMaxSalary(dto.getMaxSalary());
         conditions.setEtc(dto.getEtc());
 
-        // --- 4. 부모-자식 관계 설정 ---
-        // 방금 저장되어 ID가 생성된 부모(savedJobPostings)를 자식에게 연결해줍니다.
+        // 부모 연결(@MapsId 구조일 경우 부모만 세팅)
         conditions.setJobPosting(savedJobPostings);
-        
-        // --- 5. 자식 엔티티를 DB에 저장 ---
+
         jobPostingConditionsRepository.save(conditions);
 
-        // 대표 엔티티인 JobPostings 객체를 반환합니다.
         return savedJobPostings;
+    }
+
+    /**
+     * 실제 사용: 생성 전용 DTO 기반으로 공고/지역/카테고리/조건 저장
+     */
+    @Transactional
+    public Long create(JobPostingCreateDto dto) {
+
+        //로그인 사용자 조회
+        var au= currentUser.get()
+                .orElseThrow(()->new SecurityException("인증 정보가 없습니다"));
+        Long loginUserId=au.id();
+
+        //권한 체크 : role
+        boolean allowed=
+                au.hasRole("COMPANY") ||au.hasRole("COMPANY_HR") || au.hasRole("EMPLOYER");
+        if(!allowed){
+            throw new SecurityException("기업 권한이 필요합니다.");
+        }
+
+          
+          dto.setCreatedBy(loginUserId);
+            dto.setCompanyId(loginUserId); // ★ 항상 로그인 사용자로 강제
+
+
+        // 0-3) 회사/작성자 엔티티 로드
+        Companies company = companiesRepository.findById(dto.getCompanyId())
+                .orElseThrow(() -> new IllegalArgumentException("회사없음: " + dto.getCompanyId()));
+
+        Users creator = usersRepository.findById(loginUserId)
+                .orElseThrow(() -> new IllegalArgumentException("작성자 없음: " + loginUserId));
+
+        // --- [추가/보강] 카테고리 정규화: 중복 제거 + 대표 1개 보장 ---
+        if (dto.getCategories() == null || dto.getCategories().isEmpty()) {
+            throw new IllegalArgumentException("직무 카테고리는 1개 이상이어야 합니다.");
+        }
+
+        // 1) categoryId 기준 중복 제거(먼저 온 항목 우선, 입력 순서 보존)
+        List<JobPostingCreateDto.CategoryItem> catsNormalized = new ArrayList<>(
+                dto.getCategories().stream().collect(Collectors.collectingAndThen(
+                        Collectors.toMap(
+                                JobPostingCreateDto.CategoryItem::getCategoryId,
+                                c -> c,
+                                (a, b) -> a,          // 중복이면 앞의 것 유지
+                                LinkedHashMap::new    // 입력 순서 보존
+                        ),
+                        (Map<Integer, JobPostingCreateDto.CategoryItem> m) -> new ArrayList<>(m.values())
+                ))
+        );
+
+        // 2) 대표 개수 점검 → 없으면 첫 번째를 대표로, 여러 개면 첫 번째만 대표로
+        long primaryCnt = catsNormalized.stream()
+                .filter(c -> Boolean.TRUE.equals(c.getIsPrimary()))
+                .count();
+
+        if (primaryCnt == 0) {
+            catsNormalized.get(0).setIsPrimary(true);
+        } else if (primaryCnt > 1) {
+            boolean keep = true;
+            for (var c : catsNormalized) {
+                if (Boolean.TRUE.equals(c.getIsPrimary())) {
+                    if (keep) { keep = false; }
+                    else { c.setIsPrimary(false); }
+                }
+            }
+        }
+
+        // 정규화로 교체
+        dto.setCategories(catsNormalized);
+
+        // 1) job_postings
+        JobPostings posting = new JobPostings();
+        posting.setCompany(company);
+        posting.setTitle(dto.getTitle());
+        posting.setStatus(dto.getStatus() != null ? dto.getStatus() : PostingStatus.DRAFT);
+        posting.setCloseType(dto.getCloseType());
+        posting.setRemote(Boolean.TRUE.equals(dto.getIsRemote()));
+        posting.setOpenDate(dto.getOpenDate());
+        posting.setCloseDate(dto.getCloseDate());
+        posting.setCreatedBy(creator);
+        posting.setCreatedAt(LocalDateTime.now());
+        posting.setUpdatedAt(LocalDateTime.now());
+        posting.setDescription(dto.getDescription()); 
+        
+
+        String searchText = (dto.getSearchText() != null && !dto.getSearchText().isBlank())
+                ? dto.getSearchText()
+                : dto.getTitle();
+        posting.setSearchText(searchText);
+
+        if (dto.getCloseType() == CloseType.UNTIL_FILLED || dto.getCloseType() == CloseType.CONTINUOUS) {
+            posting.setOpenDate(null);
+            posting.setCloseDate(null);
+        }
+
+        jobPostingsRepository.save(posting);
+
+        // 2) job_posting_locations (대표 1건만 저장)
+        final Integer regionId =
+                (dto.getRegions() == null) ? null
+                        : (dto.getRegions().getSigunguId() != null
+                        ? dto.getRegions().getSigunguId()
+                        : dto.getRegions().getSidoId());
+
+        if (regionId != null) {
+            Regions region = regionRepository.findById(regionId)
+                    .orElseThrow(() -> new IllegalArgumentException("지역 없음: " + regionId));
+
+            JobPostingLocations loc = new JobPostingLocations();
+            loc.setJobPosting(posting);
+            loc.setRegion(region);
+            loc.setPrimary(true);
+            loc.setCreatedAt(LocalDateTime.now());
+
+            jobPostingLocationRepository.save(loc);
+        }
+
+        // 3) job_posting_categories (N건) - 정규화된 catsNormalized 사용
+        List<Integer> categoryIds = catsNormalized.stream()
+                .map(CategoryItem::getCategoryId)
+                .toList();
+
+        List<JobCategories> categories = jobCategoryRepository.findByIdIn(categoryIds);
+
+        for (CategoryItem item : catsNormalized) {
+            JobCategories found = categories.stream()
+                    .filter(c -> c.getId().equals(item.getCategoryId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("직무카테고리 없음: " + item.getCategoryId()));
+
+            JobPostingCategories m = new JobPostingCategories();
+            m.setJobPosting(posting);
+            m.setJobCategory(found);
+            m.setPrimary(Boolean.TRUE.equals(item.getIsPrimary()));
+            m.setCreatedAt(LocalDateTime.now());
+
+            jobPostingCategoriesRepository.save(m);
+        }
+
+        // 4) job_posting_conditions (1:1, @MapsId)
+        JobPostingCreateDto.Conditions sc = dto.getConditions();
+        if (sc == null) {
+            sc = new JobPostingCreateDto.Conditions(); // NPE 방지용 기본 객체
+        }
+
+        // --- [추가/보강] 신입이면 경력 자동 보정 ---
+        if (sc.getExperienceLevel() != null && "ENTRY".equals(sc.getExperienceLevel().name())) {
+            sc.setMinExperienceYears(Short.valueOf((short) 0)); // ← Short로 박싱
+            sc.setMaxExperienceYears(null);
+        }
+
+        JobPostingConditions cond = new JobPostingConditions();
+        // 핵심: @MapsId 구조이므로 부모만 세팅(별도 postingId 세팅 X)
+        cond.setJobPosting(posting);
+
+        cond.setMinExperienceYears(sc.getMinExperienceYears());
+        cond.setMaxExperienceYears(sc.getMaxExperienceYears());
+        cond.setMinSalary(sc.getMinSalary());
+        cond.setMaxSalary(sc.getMaxSalary());
+        cond.setSalaryType(sc.getSalaryType());
+        cond.setEmploymentType(sc.getEmploymentType());
+        cond.setExperienceLevel(sc.getExperienceLevel());
+        cond.setEducationLevel(sc.getEducationLevel());
+        cond.setWorkSchedule(sc.getWorkSchedule());
+        cond.setEtc(sc.getEtc());
+
+        jobPostingConditionsRepository.save(cond);
+
+        return posting.getId();
     }
 }
