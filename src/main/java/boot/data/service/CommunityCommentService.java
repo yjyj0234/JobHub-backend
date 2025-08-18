@@ -38,8 +38,6 @@ public class CommunityCommentService {
                 .postId(comments.getPost().getId())
                 .userId(comments.getUser().getId())
                 .userName(userName)
-                .content(comments.isDeleted() ? "삭제된 댓글입니다." : comments.getContent())
-                .isDeleted(comments.isDeleted())
                 .createdAt(comments.getCreatedAt())
                 .updatedAt(comments.getUpdatedAt())
                 .build();
@@ -47,7 +45,7 @@ public class CommunityCommentService {
 
     // 각 게시글 댓글 조회
     public List<CommunityCommentDto> getCommentsByPost(Long postId) {
-        return commentsRepository.findByPost_IdAndIsDeletedFalseOrderByCreatedAtAsc(postId)
+        return commentsRepository.findByPost_IdAndOrderByCreatedAtAsc(postId)
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -67,7 +65,6 @@ public class CommunityCommentService {
                         .post(post)
                         .user(user)
                         .content(content)
-                        .isDeleted(false)
                         .createdAt(LocalDateTime.now())
                         .updatedAt(LocalDateTime.now())
                         .build()
@@ -79,7 +76,7 @@ public class CommunityCommentService {
     //댓글 수정
     @Transactional
     public CommunityCommentDto updateComment(Long commentId, Long editorUserId, String newContent) {
-        CommunityPostsComments comment = commentsRepository.findByIdAndIsDeletedFalse(commentId)
+        CommunityPostsComments comment = commentsRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없음: " + commentId));
 
         if (!comment.getUser().getId().equals(editorUserId)) {
@@ -101,7 +98,7 @@ public class CommunityCommentService {
             throw new SecurityException("댓글 삭제 권한 없음");
         }
 
-        comment.setDeleted(true);
+
         comment.setContent("");
         comment.setUpdatedAt(LocalDateTime.now());
     }

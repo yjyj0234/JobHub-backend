@@ -61,7 +61,12 @@ public class SecurityConfig {
 
                  // 🔒 비공개or특수조건공개 -비공개나 역할로공개페이지는 여기서 추가하고 아래처럼 페이지랑 설명 적어주세요
                    // 이력서: USER만 입장가능
-                 .requestMatchers("/resumes/**").hasAuthority("USER")
+                 .requestMatchers("/resumes","/resumes/**").hasAuthority("USER")
+                      // resumes: 루트 + 하위 모두
+            .requestMatchers(HttpMethod.POST, "/resumes", "/resumes/**").hasAuthority("USER")
+            .requestMatchers(HttpMethod.PUT,  "/resumes/**").hasAuthority("USER")
+            .requestMatchers(HttpMethod.DELETE,"/resumes/**").hasAuthority("USER")
+            .requestMatchers(HttpMethod.GET,  "/resumes/**").permitAll() // 필요시 USER로
 
                
                 .anyRequest().authenticated()
