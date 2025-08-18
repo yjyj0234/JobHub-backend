@@ -7,6 +7,8 @@ import org.springframework.web.multipart.MultipartFile;
 import boot.data.service.S3StorageService;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 
@@ -24,26 +26,20 @@ public class UploadController {
     // 1) 단일 파일 업로드 (에디터에서 주로 사용)
     // =========================
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Map<String, Object> uploadOne(
-            @RequestParam("file") MultipartFile file,
-            // ✅ 모듈별로 저장 위치 분리: jobpostings / profiles / companies / articles ...
-            @RequestParam(name = "module", defaultValue = "articles") String module,
-            // ✅ 공개 여부: 기본은 private 권장(조회 시 프리사인드로 노출)
-            @RequestParam(name = "public", defaultValue = "false") boolean isPublic
-    ) throws IOException {
-
-        // ✅ S3StorageService가 (module, isPublic, file) 시그니처로 확장되어 있다고 가정
-        var r = storage.upload(module, isPublic, file);
-
-        // 프론트/에디터는 url로 미리보기하고, DB에는 key를 저장하도록 가이드
-        return Map.of(
-                "key", r.key(),
-                "url", r.url(),              // 만료되는 프리사인드 URL
-                "originalName", r.originalName(),
-                "contentType", r.contentType(),
-                "size", r.size()
-        );
-    }
+public Map<String, Object> uploadOne(@RequestParam("file") MultipartFile file,
+                                     @RequestParam(name="module", defaultValue="articles") String module,
+                                     @RequestParam(name="public", defaultValue="false") boolean isPublic) throws IOException {
+    var r = storage.upload(module, isPublic, file);
+    String viewerUrl = "/api/files/view?key=" + URLEncoder.encode(r.key(), StandardCharsets.UTF_8);
+    return Map.of(
+        "key", r.key(),
+        "url", r.url(),              // (만료) 프리사인드
+        "viewerUrl", viewerUrl,      // ✔ 고정 경로
+        "originalName", r.originalName(),
+        "contentType", r.contentType(),
+        "size", r.size()
+    );
+}
 
     // =========================
     // 2) 다중 파일 업로드
@@ -59,12 +55,13 @@ public class UploadController {
         for (MultipartFile f : files) {
             var r = storage.upload(module, isPublic, f);
             out.add(Map.of(
-                    "key", r.key(),
-                    "url", r.url(),
-                    "originalName", r.originalName(),
-                    "contentType", r.contentType(),
-                    "size", r.size()
-            ));
+                "key", r.key(),
+                "url", r.url(),
+                "viewerUrl", "/api/files/view?key=" + URLEncoder.encode(r.key(), StandardCharsets.UTF_8),
+                "originalName", r.originalName(),
+                "contentType", r.contentType(),
+                "size", r.size()
+              ));
         }
         return Map.of("files", out);
     }
@@ -96,4 +93,13 @@ public class UploadController {
                 "message", String.valueOf(e.getMessage())
         );
     }
+
+    @GetMapping("/files/view")
+    public org.springframework.http.ResponseEntity<Void> view(@RequestParam String key) {
+        String url = storage.presignGetUrl(key, java.time.Duration.ofMinutes(15));
+        return org.springframework.http.ResponseEntity.status(302)
+                .location(java.net.URI.create(url))
+                .build();
+}
+
 }
