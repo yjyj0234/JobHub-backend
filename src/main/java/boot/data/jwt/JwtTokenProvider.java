@@ -3,6 +3,7 @@ package boot.data.jwt;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,7 +15,6 @@ import boot.data.security.AuthUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 
@@ -22,94 +22,105 @@ import jakarta.annotation.PostConstruct;
 public class JwtTokenProvider {
 
     @Value("${jwt.secret}")
-    private String secretKeyRaw;
+    private String secretKeyRaw; // application.yml
 
-    @Value("${jwt.expiration:21600000}") // 기본 6시간(6*60*60*1000) = 21,600,000ms
+    @Value("${jwt.expiration:21600000}") // 6시간
     private long validityInMilliseconds;
 
     private Key key;
 
     @PostConstruct
-    protected void init() {
-        // secret이 "평문"이라면 그냥 bytes로, 이미 Base64라면 decode해서 쓰면 됨.
-        // 지금은 평문 가정 (Base64 인코딩을 다시 하지 않음)
-        this.key = Keys.hmacShaKeyFor(secretKeyRaw.getBytes(StandardCharsets.UTF_8));
+protected void init() {
+    String raw = (secretKeyRaw == null) ? "" : secretKeyRaw.trim();
+
+    byte[] keyBytes;
+    try {
+        keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(raw); // Base64로 해석 가능하면 그걸로
+    } catch (IllegalArgumentException ignore) {
+        keyBytes = raw.getBytes(StandardCharsets.UTF_8);           // 아니면 평문
     }
 
-    // userId를 uid로, 이메일은 subject로, role은 claim으로 넣기
+    if (keyBytes.length < 32) { // HS256 최소 길이 보장
+        byte[] padded = new byte[32];
+        System.arraycopy(keyBytes, 0, padded, 0, Math.min(keyBytes.length, 32));
+        for (int i = keyBytes.length; i < 32; i++) padded[i] = (byte) (i * 31 + 7);
+        keyBytes = padded;
+    }
+
+    this.key = Keys.hmacShaKeyFor(keyBytes);
+
+    // ✅ 길이와 앞 12바이트 Base64로 로그 (키 노출 방지)
+    String head = java.util.Base64.getEncoder().encodeToString(
+        java.util.Arrays.copyOf(keyBytes, Math.min(12, keyBytes.length))
+    );
+    System.out.println("[JWT] key initialized. size=" + keyBytes.length + " head(b64)=" + head + "...");
+}
+
+    // 토큰 생성
     public String createToken(Long userId, String email, String role) {
-        String normalized = (role != null && role.startsWith("ROLE_"))
-            ? role.substring(5)
-            : role;
-    
+        String normalized = normalizeRole(role); // "USER"/"ADMIN"/"COMPANY" 형태로 저장
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
-    
-        return Jwts.builder()
+
+        String token = Jwts.builder()
                 .setSubject(email)
                 .claim("uid", userId)
-                .claim("role", normalized) // ← 접두어 없이 저장
+                .claim("role", normalized)
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .signWith(key, SignatureAlgorithm.HS256)
+                .signWith(key)
                 .compact();
+
+        return token;
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null || role.isBlank()) return null;
+        String r = role.trim();
+        if (r.startsWith("ROLE_")) r = r.substring(5);
+        return r.toUpperCase(); // "user" → "USER"
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            var jws = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            String alg = String.valueOf(jws.getHeader().getAlgorithm());
+            System.out.println("[JWT] validate OK alg=" + alg + " exp=" + jws.getBody().getExpiration());
             return true;
         } catch (JwtException | IllegalArgumentException e) {
+            System.out.println("[JWT] validateToken failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
             return false;
         }
     }
 
     public Claims getClaims(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseClaimsJws(token).getBody();
     }
 
-    public String getEmail(String token) {
-        return getClaims(token).getSubject();
-    }
+    public String getEmail(String token) { return getClaims(token).getSubject(); }
 
     public Long getUserId(String token) {
         Number n = getClaims(token).get("uid", Number.class);
         return n == null ? null : n.longValue();
     }
 
-    public String getRole(String token) {
-        return getClaims(token).get("role", String.class);
+    public String getRole(String token) { return getClaims(token).get("role", String.class); }
+
+    public Authentication getAuthentication(String token) {
+        Long uid = getUserId(token);
+        String email = getEmail(token);
+
+        String roleClaim = getRole(token); // "USER" 또는 과거 "ROLE_USER"
+        String authority = normalizeRole(roleClaim); // 최종 "USER"
+
+        List<SimpleGrantedAuthority> authorities =
+                (authority == null) ? List.of() : List.of(new SimpleGrantedAuthority(authority));
+
+        var principal = new AuthUser(uid, email, authority);
+        var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
+
+        System.out.println("[JWT] auth SET -> uid=" + uid + ", email=" + email + ", authorities=" + authorities);
+        return auth;
     }
-
-    // private String normalizeRole(String role) {
-    //     if (role == null || role.isBlank()) return null;
-    //     return role.startsWith("ROLE_") ? role : "ROLE_" + role;
-    // }
-
-    
-    // 필요하다면 여기서 Authentication 생성(Principal을 uid로 세팅)
-   // 인증 객체 생성 시도: 권한(authority)에도 접두어 없이 그대로 세팅
-public Authentication getAuthentication(String token) {
-    Long uid = getUserId(token);
-    String email = getEmail(token);
-
-    String roleClaim = getRole(token); // "USER" or "ROLE_USER" (과거 토큰 호환)
-    // 혹시 이전 토큰에 ROLE_로 들어있으면 제거
-    String authority = (roleClaim != null && roleClaim.startsWith("ROLE_"))
-        ? roleClaim.substring(5)
-        : roleClaim; // 최종: "USER"/"COMPANY"/"ADMIN"
-
-    var authorities = (authority == null)
-        ? java.util.List.<SimpleGrantedAuthority>of()
-        : java.util.List.of(new SimpleGrantedAuthority(authority)); // ← 접두어 없음
-
-    // AuthUser의 세 번째 파라미터는 문자열 "USER" 그대로 사용(또는 enum이면 enum으로)
-    var principal = new AuthUser(uid, email, authority);
-
-    var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
-    System.out.println("[JWT] set auth uid=" + uid + " authorities=" + auth.getAuthorities());
-    return auth;
-}
 }
