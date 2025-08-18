@@ -30,11 +30,6 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(provider);
     }
 
-
-
-
-
-
 //주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여
 //한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게
 
@@ -66,7 +61,12 @@ public class SecurityConfig {
                    // 이력서: USER만 입장가능
                  .requestMatchers("/resumes/**").hasAuthority("USER")
 
-               
+               // company만 입장
+               .requestMatchers(HttpMethod.POST, "/api/uploads/**").hasAuthority("COMPANY")
+                .requestMatchers(HttpMethod.POST, "/api/postings/**").hasAuthority("COMPANY")
+                .requestMatchers(HttpMethod.PUT,  "/api/postings/**").hasAuthority("COMPANY")
+                .requestMatchers(HttpMethod.DELETE,"/api/postings/**").hasAuthority("COMPANY")
+
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
