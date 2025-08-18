@@ -132,13 +132,13 @@ public class GroupChatService {
     /* ===== Helper ===== */
 
     private RoomResDto toRoomRes(GroupChatRooms room) {
-        int memberCnt = membersRepo.countByRoom_Id(room.getId());
-        var lastOpt = messagesRepo.findTop1ByRoom_IdOrderByIdDesc(room.getId());
+        int memberCnt = membersRepo.countByRoom_Id(room.getId()); // 방 멤버 수
+        var lastOpt = messagesRepo.findTop1ByRoom_IdOrderByIdDesc(room.getId()); // 마지막 메시지 조회
 
         return RoomResDto.builder()
                 .id(room.getId())
                 .roomName(room.getRoomName())
-                .createdBy(room.getCreatedBy().getId()) // ✅ Users → id 추출
+                .createdBy(room.getCreatedBy().getId()) // Users → id 추출
                 .createdAt(room.getCreatedAt())
                 .memberCount(memberCnt)
                 .lastMessage(lastOpt.map(GroupChatMessages::getMessage).orElse(null))
