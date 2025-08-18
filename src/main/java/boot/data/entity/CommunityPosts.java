@@ -23,7 +23,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Community_posts")
+@Table(name = "community_posts")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -62,4 +62,8 @@ public class CommunityPosts {
 	@Column(name = "updated_at", nullable = false)
 	@Comment("수정일")
 	private LocalDateTime updatedAt = LocalDateTime.now();
+
+    public LocalDateTime getUpdatedAt() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 } 

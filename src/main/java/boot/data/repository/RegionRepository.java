@@ -1,9 +1,12 @@
 package boot.data.repository;
 
-import boot.data.entity.Regions;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import java.util.List;
+
+import boot.data.entity.Regions;
 
 @Repository
 public interface RegionRepository extends JpaRepository<Regions, Integer> {
@@ -19,4 +22,11 @@ public interface RegionRepository extends JpaRepository<Regions, Integer> {
 
     // 정렬이 필요하면 이렇게도 사용 가능
     List<Regions> findAllByOrderByIdAsc();
+
+    //정확 일치 보조(혹시 컬레이션 때문에 IgnoreCase가 기대와 다를 때 백업).
+    Optional<Regions> findFirstByName(String name);
+
+    //사용자 입력 오타(대소문자)와 DB 설정 차이를 흡수.
+    Optional<Regions> findFirstByNameIgnoreCase(String name);
+
 }

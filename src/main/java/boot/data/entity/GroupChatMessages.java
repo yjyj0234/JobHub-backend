@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,6 +22,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "Group_chat_messages")
+@Builder
 public class GroupChatMessages {
 	
 	@Id
@@ -45,5 +47,6 @@ public class GroupChatMessages {
 	
 	@Column(name = "sent_at", nullable = false)
 	@Comment("전송 시각")
+	@Builder.Default
 	private LocalDateTime sentAt = LocalDateTime.now();
 } 

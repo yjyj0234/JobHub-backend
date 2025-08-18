@@ -27,6 +27,7 @@ import boot.data.dto.UserDto;
 import boot.data.entity.Users;
 import boot.data.jwt.JwtTokenProvider;
 import boot.data.repository.UsersRepository;
+import boot.data.security.AuthUser;
 import boot.data.type.UserType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -135,12 +136,12 @@ return ResponseEntity.ok()
 //     return Map.of("id", uid);
 // }
 @GetMapping("/me")
-public ResponseEntity<UserDto> me(@AuthenticationPrincipal Long uid) {
-  if (uid == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-  return userRepository.findById(uid)
-      .map(UserDto::from)
-      .map(ResponseEntity::ok)
-      .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+public ResponseEntity<UserDto> me(@AuthenticationPrincipal AuthUser me) {
+    if (me == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    return userRepository.findById(me.id())
+        .map(UserDto::from)
+        .map(ResponseEntity::ok)
+        .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
 }
 
 
