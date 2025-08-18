@@ -50,12 +50,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // ✅ 공개 경로 여기서 추가하세요 
-                .requestMatchers("/auth/login", "/auth/register", "/auth/refresh").permitAll()
+                .requestMatchers("/auth/login", "/auth/register", "/auth/refresh", "/ws/**").permitAll()
                 .requestMatchers("/public/**", "/docs/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.GET,
                     "/api/search/**",
                     "/jobpostinglist/**",     // 기존 경로 유지
-                    "/api/jobpostinglist/**"  
+                    "/api/jobpostinglist/**",
+                    "/group-chat/rooms"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
 

@@ -23,7 +23,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Community_posts_comments")
+@Table(name = "community_posts_comments")
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -49,7 +49,6 @@ public class CommunityPostsComments {
 	@Column(columnDefinition = "TEXT", nullable = false)
 	@Comment("댓글 내용")
 	private String content;
-	
 	
 	@Builder.Default
 	@Column(name = "created_at", nullable = false)

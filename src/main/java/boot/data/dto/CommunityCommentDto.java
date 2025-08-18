@@ -1,9 +1,10 @@
 package boot.data.dto;
 
-import java.time.LocalDate;
+
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +23,6 @@ public class CommunityCommentDto {
     private Long postId; // 게시글 ID
     private Long userId; // 작성자 ID
     private String content; // 댓글 내용
-    private boolean isDeleted; // 삭제 여부
 
     private String userName; // 작성자 이름
 
@@ -33,4 +33,8 @@ public class CommunityCommentDto {
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt; // 수정일
+
+    @JsonProperty("isOwner") // 작성자 여부를 나타내는 필드
+    private boolean isOwner; // 작성자 여부
+
 }
