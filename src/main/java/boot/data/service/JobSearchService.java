@@ -62,30 +62,53 @@ public class JobSearchService {
         
         Page<JobPostings> result;
         
-        // 모든 조건이 비어있는 경우 - 조회순 전체 조회 (초기 로딩)
+        // 조건별 분기 처리
         if (keyword == null && regionIds == null && categoryIds == null) {
-            log.info("조건 없음 - 조회순 전체 조회");
+            // 전체 조회
+            log.info("전체 조회");
             result = jobPostingSearchRepository.findAll(
                 PageRequest.of(request.getPage(), request.getSize(), 
                 Sort.by(Sort.Direction.DESC, "viewCount"))
             );
         } 
-        // 키워드만 있는 경우
         else if (keyword != null && regionIds == null && categoryIds == null) {
+            // 키워드만
             log.info("키워드만 검색: {}", keyword);
             result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
+            //updateSearchKeyword(keyword);
+        }
+        else if (keyword == null && regionIds != null && categoryIds == null) {
+            // 지역만
+            log.info("지역만 검색: {}", regionIds);
+            result = jobPostingSearchRepository.searchByRegions(regionIds, pageRequest);
+        }
+        else if (keyword == null && regionIds == null && categoryIds != null) {
+            // 직무만
+            log.info("직무만 검색: {}", categoryIds);
+            result = jobPostingSearchRepository.searchByCategories(categoryIds, pageRequest);
+        }
+        else if (keyword != null && regionIds != null && categoryIds == null) {
+            // 키워드 + 지역
+            log.info("키워드+지역 검색: keyword={}, regions={}", keyword, regionIds);
+            result = jobPostingSearchRepository.searchByKeywordAndRegions(keyword, regionIds, pageRequest);
             updateSearchKeyword(keyword);
         }
-        // 지역/직무 필터만 있는 경우
-        else if (keyword == null && (regionIds != null || categoryIds != null)) {
-            log.info("필터만 검색: regions={}, categories={}", regionIds, categoryIds);
-            result = jobPostingSearchRepository.searchWithFilters(regionIds, categoryIds, pageRequest);
+        else if (keyword != null && regionIds == null && categoryIds != null) {
+            // 키워드 + 직무
+            log.info("키워드+직무 검색: keyword={}, categories={}", keyword, categoryIds);
+            result = jobPostingSearchRepository.searchByKeywordAndCategories(keyword, categoryIds, pageRequest);
+            updateSearchKeyword(keyword);
         }
-        // 키워드 + 필터 복합 검색
+        else if (keyword == null && regionIds != null && categoryIds != null) {
+            // 지역 + 직무
+            log.info("지역+직무 검색: regions={}, categories={}", regionIds, categoryIds);
+            result = jobPostingSearchRepository.searchByRegionsAndCategories(regionIds, categoryIds, pageRequest);
+        }
         else {
-            log.info("복합 검색: keyword={}, regions={}, categories={}", keyword, regionIds, categoryIds);
-            // 복합 검색용 메서드 호출 (Repository에 추가 필요)
-            result = jobPostingSearchRepository.searchWithKeywordAndFilters(keyword, regionIds, categoryIds, pageRequest);
+            // 키워드 + 지역 + 직무 (전체 조합)
+            log.info("전체 조합 검색: keyword={}, regions={}, categories={}", keyword, regionIds, categoryIds);
+            // 임시로 키워드만 검색 처리 (나중에 개선)
+            result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
             updateSearchKeyword(keyword);
         }
         
