@@ -160,7 +160,7 @@ public MessageDto sendMessage(Long roomId, String message, Long senderId) {
             .build();
     messagesRepo.save(saved);
 
-    MessageDto dto = toMessageDto(saved, senderId);
+    MessageDto dto = toMessageDto(saved, null); // 현재 사용자 ID는 null로 설정 (STOMP에서 Principal 사용)
     messagingTemplate.convertAndSend("/topic/rooms/" + room.getId(), dto);
     return dto;
 }
