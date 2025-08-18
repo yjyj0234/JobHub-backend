@@ -46,6 +46,24 @@ public interface JobPostingSearchRepository extends JpaRepository<JobPostings,Lo
     @Query("SELECT jp FROM JobPostings jp WHERE jp.status = 'OPEN' ORDER BY jp.viewCount DESC")
     List<JobPostings> findTopByViewCount(Pageable pageable);
 
-    
+    // 지역만 검색
+    @Query("SELECT DISTINCT jp FROM JobPostings jp JOIN jp.jobPostingLocations jpl WHERE jp.status = 'OPEN' AND jpl.region.id IN :regionIds")
+    Page<JobPostings> searchByRegions(@Param("regionIds") List<Integer> regionIds, Pageable pageable);
+
+    // 직무만 검색  
+    @Query("SELECT DISTINCT jp FROM JobPostings jp JOIN jp.jobPostingCategories jpc WHERE jp.status = 'OPEN' AND jpc.jobCategory.id IN :categoryIds")
+    Page<JobPostings> searchByCategories(@Param("categoryIds") List<Integer> categoryIds, Pageable pageable);
+
+    // 키워드 + 지역
+    @Query("SELECT DISTINCT jp FROM JobPostings jp JOIN jp.company c JOIN jp.jobPostingLocations jpl WHERE jp.status = 'OPEN' AND (LOWER(jp.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND jpl.region.id IN :regionIds")
+    Page<JobPostings> searchByKeywordAndRegions(@Param("keyword") String keyword, @Param("regionIds") List<Integer> regionIds, Pageable pageable);
+
+    // 키워드 + 직무
+    @Query("SELECT DISTINCT jp FROM JobPostings jp JOIN jp.company c JOIN jp.jobPostingCategories jpc WHERE jp.status = 'OPEN' AND (LOWER(jp.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND jpc.jobCategory.id IN :categoryIds")
+    Page<JobPostings> searchByKeywordAndCategories(@Param("keyword") String keyword, @Param("categoryIds") List<Integer> categoryIds, Pageable pageable);
+
+    // 지역 + 직무
+    @Query("SELECT DISTINCT jp FROM JobPostings jp JOIN jp.jobPostingLocations jpl JOIN jp.jobPostingCategories jpc WHERE jp.status = 'OPEN' AND jpl.region.id IN :regionIds AND jpc.jobCategory.id IN :categoryIds")
+    Page<JobPostings> searchByRegionsAndCategories(@Param("regionIds") List<Integer> regionIds, @Param("categoryIds") List<Integer> categoryIds, Pageable pageable);
 
 }
