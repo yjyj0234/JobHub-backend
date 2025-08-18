@@ -49,14 +49,15 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/auth/login", "/auth/register", "/auth/refresh",
                     "/public/**", "/docs/**", "/swagger-ui/**", "/v3/api-docs/**",
-                    "/ws/**", "/community/**"
+                    "/ws/**", "/community/**", "/group-chat/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET,
                     "/api/search/**",
                     "/jobpostinglist/**",
                     "/api/jobpostinglist/**",
                     "/group-chat/rooms",
-                    "/api/jobs/**"
+                    "/api/jobs/**",
+                    "/community/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
 
