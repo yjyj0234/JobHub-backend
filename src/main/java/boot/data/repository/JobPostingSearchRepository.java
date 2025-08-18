@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -13,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import boot.data.entity.JobPostings;
+
 //채용 공고 Repository ,  JpaSpecificationExecutor 추가로 동적 쿼리 지원
 @Repository
 public interface JobPostingSearchRepository extends JpaRepository<JobPostings,Long>,JpaSpecificationExecutor<JobPostings> {
@@ -41,7 +43,6 @@ public interface JobPostingSearchRepository extends JpaRepository<JobPostings,Lo
     @Query("SELECT jp FROM JobPostings jp WHERE jp.company.id = :companyId AND jp.status = 'OPEN' ORDER BY jp.createdAt DESC")
     List<JobPostings> findByCompanyId(@Param("companyId") Long companyId);
 
-
     //조회수 기준으로 한 인기채용공고
     @Query("SELECT jp FROM JobPostings jp WHERE jp.status = 'OPEN' ORDER BY jp.viewCount DESC")
     List<JobPostings> findTopByViewCount(Pageable pageable);
@@ -65,5 +66,16 @@ public interface JobPostingSearchRepository extends JpaRepository<JobPostings,Lo
     // 지역 + 직무
     @Query("SELECT DISTINCT jp FROM JobPostings jp JOIN jp.jobPostingLocations jpl JOIN jp.jobPostingCategories jpc WHERE jp.status = 'OPEN' AND jpl.region.id IN :regionIds AND jpc.jobCategory.id IN :categoryIds")
     Page<JobPostings> searchByRegionsAndCategories(@Param("regionIds") List<Integer> regionIds, @Param("categoryIds") List<Integer> categoryIds, Pageable pageable);
+    
+    // 좋아요한 카테고리 기반 추천 공고
+    @Query("SELECT DISTINCT jp FROM JobPostings jp JOIN jp.jobPostingCategories jpc JOIN jpc.jobCategory jc WHERE jp.status = 'OPEN' AND (jc.id IN :categoryIds OR jc.parent.id IN :categoryIds) AND jp.id NOT IN (SELECT jpl.jobPosting.id FROM JobPostingLikes jpl WHERE jpl.user.id = :userId) ORDER BY jp.viewCount DESC, jp.createdAt DESC")
+    List<JobPostings> findRecommendedJobsByUserLikes(@Param("categoryIds") List<Integer> categoryIds, @Param("userId") Long userId, Pageable pageable);
 
+    // 뷰카운트 기준 TOP 기업
+    @Query("SELECT c.id, c.name, cd.logoUrl, cd.description, i.name, SUM(jp.viewCount), COUNT(jp.id) FROM JobPostings jp JOIN jp.company c LEFT JOIN c.companyDetails cd LEFT JOIN c.industry i WHERE jp.status = 'OPEN' GROUP BY c.id, c.name, cd.logoUrl, cd.description, i.name ORDER BY SUM(jp.viewCount) DESC")
+    List<Object[]> findTopCompaniesByViewCount(Pageable pageable);
+
+    default List<Object[]> findTopCompaniesByViewCount() {
+        return findTopCompaniesByViewCount(PageRequest.of(0, 10));
+    }
 }

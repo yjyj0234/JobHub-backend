@@ -64,7 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (auth != null) {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                     log.debug("[JWT] authentication set: name={}, authorities={}",
-                              auth.getName(), auth.getAuthorities());
+                            auth.getName(), auth.getAuthorities());
                 } else {
                     // 토큰은 유효했지만 인증 객체를 만들지 못한 경우
                     request.setAttribute("authError", "AUTH_BUILD_FAILED");
