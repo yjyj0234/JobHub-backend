@@ -22,8 +22,8 @@ public interface CommunityPostCommentsRepository extends JpaRepository<Community
 
     Long countByPost_Id(Long postid); // 게시글 ID로 조회하여 존재 여부 확인
      @Query("select c.post.id as postId, count(c) as cnt " +
-         "from CommunityPostsComments c " +
-         "where c.post.id in :postIds " +
-         "group by c.post.id")
+           "from CommunityPostsComments c " +
+           "where c.post.id in :postIds " +
+           "group by c.post.id")
     List<Object[]> countByPostIdIn(@Param("postIds") List<Long> postIds);
 }
