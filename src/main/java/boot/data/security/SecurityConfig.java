@@ -46,6 +46,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+
                 // 프리플라이트 요청 허용
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
@@ -56,7 +57,8 @@ public class SecurityConfig {
                     "/api/search/**",
                     "/jobpostinglist/**",     // 기존 경로 유지
                     "/api/jobpostinglist/**",
-                    "/group-chat/rooms"
+                    "/group-chat/rooms",
+                    "/api/jobs/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
 

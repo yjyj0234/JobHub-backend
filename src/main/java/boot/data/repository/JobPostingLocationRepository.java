@@ -24,4 +24,14 @@ public interface JobPostingLocationRepository extends JpaRepository<JobPostingLo
             "WHERE jpl.region.id = :regionId " +
             "AND jpl.jobPosting.status = 'OPEN'")
     Long countActiveJobsByRegion(Integer regionId);
+
+    @Query("""
+    select jpl
+    from JobPostingLocations jpl
+    join fetch jpl.region r
+    where jpl.jobPosting.id = :jobId
+    order by jpl.isPrimary desc, jpl.id asc
+""")
+List<JobPostingLocations> findByJobIdWithRegion(Long jobId);
+
 }

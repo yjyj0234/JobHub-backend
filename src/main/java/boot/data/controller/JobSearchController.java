@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @Slf4j
 @RestController
@@ -21,7 +24,6 @@ import java.util.HashMap;
 public class JobSearchController {
     
     private final JobSearchService jobSearchService;  // ⭐ CategoryService 제거
-    
     /**
      * 채용공고 검색
      */
