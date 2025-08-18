@@ -21,7 +21,7 @@ import boot.data.jwt.JwtAuthenticationFilter;
 import boot.data.jwt.JwtTokenProvider;
 
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity(debug = true)
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
@@ -50,7 +50,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // ✅ 공개 경로 여기서 추가하세요 
-                .requestMatchers("/auth/login", "/auth/register", "/auth/refresh", "/ws/**").permitAll()
+                .requestMatchers("/auth/login", "/auth/register", "/auth/refresh", "/ws/**", "/community/**").permitAll()
                 .requestMatchers("/public/**", "/docs/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.GET,
                     "/api/search/**",

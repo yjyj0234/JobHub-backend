@@ -74,7 +74,7 @@ public class CommunityPostService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found")); // 404로
         
         // 유저 정보 가져오기
-        String userName = userProfilesRepository.findByUserId(p.getUser().getId())
+        String userName = userProfilesRepository.findByUserId(p.getUser() != null ? p.getUser().getId() : null)
                 .map(UserProfiles::getName)
                 .orElse("탈퇴회원");
 
