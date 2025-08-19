@@ -1,9 +1,10 @@
 package boot.data.service;
 
+import java.security.Principal;
 import java.util.Comparator;
 import java.util.List;
 
-
+import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -101,33 +102,78 @@ public class GroupChatService {
     }
 
     /* 메시지 전송 */
-    @Transactional
-    public MessageDto sendMessage(SendMessageReqDto req) {
-        Long uid = currentUser.idOrThrow();
-        Users me = usersRepo.findById(uid)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 없음: " + uid));
+@Transactional
+public MessageDto sendMessageFromPrincipal(Long roomId, String message, Principal principal) {
+    Long uid = resolveUidFromPrincipal(principal);
+    return sendMessage(roomId, message, uid);
+}
 
-        GroupChatRooms room = roomsRepo.findById(req.getRoomId())
-                .orElseThrow(() -> new IllegalArgumentException("room not found: " + req.getRoomId()));
+/** 다양한 Principal 타입/표현을 견고하게 처리 */
+private Long resolveUidFromPrincipal(Principal principal) {
+    if (principal == null) throw new IllegalStateException("인증 필요");
 
-        if (!membersRepo.existsByRoom_IdAndUser_Id(room.getId(), uid)) {
-            throw new IllegalStateException("not a member of room: " + room.getId());
+    // 1) Authentication인 경우 principal 객체에서 꺼내보기
+    if (principal instanceof org.springframework.security.core.Authentication auth) {
+        Object p = auth.getPrincipal();
+        // (1) 커스텀 AuthUser에 id가 있는 경우
+        if (p != null && p.getClass().getSimpleName().equals("AuthUser")) {
+            try {
+                // 리플렉션으로 getId() 시도 (AuthUser 타입 의존 제거)
+                var m = p.getClass().getMethod("getId");
+                Object idObj = m.invoke(p);
+                if (idObj != null) return Long.parseLong(idObj.toString());
+            } catch (Exception ignore) {}
         }
-
-        GroupChatMessages saved = GroupChatMessages.builder()
-                .room(room)
-                .sender(me) // ✅ Users 객체로 세팅
-                .message(req.getMessage())
-                .build();
-        messagesRepo.save(saved);
-
-        MessageDto dto = toMessageDto(saved, null);
-
-
-
-        messagingTemplate.convertAndSend("/topic/rooms/" + room.getId(), dto);
-        return dto;
+        // (2) UserDetails 사용자명에 uid를 담는 경우
+        if (p instanceof org.springframework.security.core.userdetails.UserDetails ud) {
+            try { return Long.parseLong(ud.getUsername()); } catch (Exception ignore) {}
+        }
     }
+
+    // 2) Principal.getName()이 uid인 경우
+    try { return Long.parseLong(principal.getName()); } catch (Exception ignore) {}
+
+    // 3) "id=123" 같은 문자열에서 추출 (예: "AuthUser[id=19, ...]")
+    var m = java.util.regex.Pattern.compile("\\bid=(\\d+)\\b").matcher(principal.getName());
+    if (m.find()) return Long.parseLong(m.group(1));
+
+    throw new IllegalStateException("STOMP Principal에서 uid 추출 실패: " + principal.getName());
+}
+
+
+@Transactional
+public MessageDto sendMessage(Long roomId, String message, Long senderId) {
+    Users me = usersRepo.findById(senderId)
+            .orElseThrow(() -> new IllegalArgumentException("사용자 없음: " + senderId));
+
+    GroupChatRooms room = roomsRepo.findById(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+
+    if (!membersRepo.existsByRoom_IdAndUser_Id(room.getId(), senderId)) {
+        throw new IllegalStateException("not a member of room: " + room.getId());
+    }
+
+    GroupChatMessages saved = GroupChatMessages.builder()
+            .room(room)
+            .sender(me)
+            .message(message)
+            .build();
+    messagesRepo.save(saved);
+
+    MessageDto dto = toMessageDto(saved, null); // 현재 사용자 ID는 null로 설정 (STOMP에서 Principal 사용)
+    messagingTemplate.convertAndSend("/topic/rooms/" + room.getId(), dto);
+    return dto;
+}
+
+public List<RoomResDto> exploreRooms() {
+    // 전체 방 최신순
+    return roomsRepo.findAll(Sort.by(Sort.Direction.DESC, "id"))
+            .stream()
+            .map(this::toRoomRes)
+            .toList();
+}
+
+
 
     /* ===== Helper ===== */
 
@@ -162,6 +208,7 @@ public class GroupChatService {
                 .build();
     }
 
+    // 현재 사용자 ID를 안전하게 가져옵니다.
     private Long tryCurrentUserId() {
         try { return currentUser.idOrThrow(); } catch (Exception e) { return null; }
     }

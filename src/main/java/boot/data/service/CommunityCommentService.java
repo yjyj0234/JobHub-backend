@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import boot.data.dto.CommunityCommentDto;
 import boot.data.entity.CommunityPosts;
 import boot.data.entity.CommunityPostsComments;
+import boot.data.entity.UserProfiles;
 import boot.data.entity.Users;
 import boot.data.repository.CommunityPostCommentsRepository;
 import boot.data.repository.CommunityPostsRepository;

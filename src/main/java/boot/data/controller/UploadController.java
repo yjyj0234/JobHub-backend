@@ -84,10 +84,12 @@ public Map<String, Object> uploadOne(@RequestParam("file") MultipartFile file,
     // =========================
     // 4) 공통 에러 핸들러(개발 중 원인 파악용)
     // =========================
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, Object> onError(Exception e) {
         e.printStackTrace();
+
         return Map.of(
                 "error", e.getClass().getSimpleName(),
                 "message", String.valueOf(e.getMessage())
@@ -101,5 +103,6 @@ public Map<String, Object> uploadOne(@RequestParam("file") MultipartFile file,
                 .location(java.net.URI.create(url))
                 .build();
 }
+
 
 }
