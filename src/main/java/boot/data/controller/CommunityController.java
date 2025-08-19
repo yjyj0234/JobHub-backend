@@ -2,6 +2,7 @@ package boot.data.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -22,11 +23,10 @@ public class CommunityController {
     //게시판 글쓰기
     @PostMapping("/addpost")
     public ResponseEntity<CommunityPostDto> insertPost(@RequestBody CommunityPostDto dto,
-                                                        @AuthenticationPrincipal AuthUser authUser) {
-        CommunityPostDto saved = service.insertDto(dto);
-        return ResponseEntity.ok(saved);
-    }
-
+                                                    @AuthenticationPrincipal AuthUser authUser) {
+    CommunityPostDto saved = service.insertDto(dto);
+    return ResponseEntity.ok(saved);
+}
     // === 단건 조회 ===
     @GetMapping("/detail/{id}")
     public ResponseEntity<CommunityPostDto> getPost(@PathVariable("id") Long id) {  //PathVariable:  요청 URL 경로에 포함된 값을 메서드 파라미터로 바로 매핑해 주는 스프링 MVC 기능

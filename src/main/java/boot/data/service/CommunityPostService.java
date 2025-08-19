@@ -68,7 +68,7 @@ public class CommunityPostService {
     }
 
     // === Read One ===
-     @Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public CommunityPostDto getOne(Long id) {
         CommunityPosts p = communityPostsRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found")); // 404로
