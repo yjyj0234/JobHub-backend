@@ -107,8 +107,8 @@ public class JobPostingService {
         
 
         // 0-3) 회사/작성자 엔티티 로드
-        Companies company = companiesRepository.findById(loginUserId)
-                .orElseThrow(() -> new IllegalArgumentException("회사없음: " + loginUserId));
+        Companies company = companiesRepository.findByOwner_Id(loginUserId)
+        .orElseThrow(() -> new IllegalArgumentException("owner_id=" + loginUserId + " 의 회사가 없습니다."));
 
         Users creator = usersRepository.findById(loginUserId)
                 .orElseThrow(() -> new IllegalArgumentException("작성자 없음: " + loginUserId));

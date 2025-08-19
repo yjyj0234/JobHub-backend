@@ -86,4 +86,9 @@ public class Companies {
     @Comment("현재 진행중인 채용공고 수")
     private Integer activeJobCount = 0;
     
-}
+
+    //owner_id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", unique = true) // DB 스키마와 일치(UNIQUE)
+    private Users owner;
+    }
