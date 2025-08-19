@@ -24,15 +24,12 @@ public class S3StorageService {
     private final S3Client s3;
     private final S3Presigner presigner;
     private final String bucket;
-
-    // yml에서 조정 가능하게(기본 30분)
     private final long presignTtlMinutes;
 
     public S3StorageService(
             S3Client s3,
             S3Presigner presigner,
             @Value("${cloud.aws.s3.bucket}") String bucket,
-            // 없으면 30분 디폴트
             @Value("${app.s3.presign-ttl-minutes:30}") long presignTtlMinutes
     ) {
         this.s3 = s3;
@@ -41,10 +38,12 @@ public class S3StorageService {
         this.presignTtlMinutes = presignTtlMinutes;
     }
 
-    public UploadResult upload(MultipartFile file) throws IOException {
+    /** 모듈별 업로드 (예: modules = "jobpostings", "profiles", "companies", "articles" 등) */
+    public UploadResult upload(String module, boolean isPublic, MultipartFile file) throws IOException {
         String original = StringUtils.cleanPath(file.getOriginalFilename());
-        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"));
-        String key = "jobpostings/" + datePath + "/" + UUID.randomUUID() + "_" + original;
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String base = (isPublic ? "public" : "private"); // 필요하면 모두 private 권장
+        String key = base + "/" + module + "/" + datePath + "/" + UUID.randomUUID() + "_" + original;
 
         PutObjectRequest req = PutObjectRequest.builder()
                 .bucket(bucket)
@@ -54,25 +53,19 @@ public class S3StorageService {
 
         s3.putObject(req, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-        // ✅ 업로드 직후 30분짜리 프리사인드 GET URL 생성
+        // 업로드 직후 보기용 프리사인드 GET URL 발급
         String presignedUrl = presignGetUrl(key, Duration.ofMinutes(presignTtlMinutes));
 
-        // 반환: key는 DB 보관용, url은 미리보기용(만료됨)
         return new UploadResult(key, presignedUrl, original, file.getContentType(), file.getSize());
     }
 
-    /** 필요 시 재발급용 메서드 (컨트롤러에서 호출해 새 티켓 발급) */
+    /** 특정 key에 대해 프리사인드 GET 재발급 */
     public String presignGetUrl(String key, Duration ttl) {
-        GetObjectRequest get = GetObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .build();
-
+        GetObjectRequest get = GetObjectRequest.builder().bucket(bucket).key(key).build();
         GetObjectPresignRequest req = GetObjectPresignRequest.builder()
                 .signatureDuration(ttl)
                 .getObjectRequest(get)
                 .build();
-
         return presigner.presignGetObject(req).url().toString();
     }
 

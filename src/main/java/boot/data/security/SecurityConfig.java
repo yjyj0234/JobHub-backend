@@ -30,6 +30,10 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(provider);
     }
 
+
+//주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여
+//한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtAuthenticationFilter jwtFilter) throws Exception {
@@ -57,9 +61,16 @@ public class SecurityConfig {
                     "/api/jobpostinglist/**",
                     "/group-chat/rooms",
                     "/api/jobs/**",
+                    "/api/files/view"
                     "/community/**"
                 ).permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/search/**","/api/uploads/**").permitAll()
+
+
+               // company만 입장
+                .requestMatchers(HttpMethod.POST, "/api/postings/**").hasAuthority("COMPANY")
+                .requestMatchers(HttpMethod.PUT,  "/api/postings/**").hasAuthority("COMPANY")
+                .requestMatchers(HttpMethod.DELETE,"/api/postings/**").hasAuthority("COMPANY")
 
 
                 //디버그 on
