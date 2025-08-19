@@ -53,16 +53,16 @@ public class SecurityConfig {
                     "/jobpostinglist/**",     // 기존 경로 유지
                     "/api/jobpostinglist/**",
                     "/group-chat/rooms",
-                    "/api/jobs/**"
+                    "/api/jobs/**",
+                    "/api/files/view"
                 ).permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/search/**","/api/uploads/**").permitAll()
 
                  // 🔒 비공개or특수조건공개 -비공개나 역할로공개페이지는 여기서 추가하고 아래처럼 페이지랑 설명 적어주세요
                    // 이력서: USER만 입장가능
                  .requestMatchers("/resumes/**").hasAuthority("USER")
 
                // company만 입장
-               .requestMatchers(HttpMethod.POST, "/api/uploads/**").hasAuthority("COMPANY")
                 .requestMatchers(HttpMethod.POST, "/api/postings/**").hasAuthority("COMPANY")
                 .requestMatchers(HttpMethod.PUT,  "/api/postings/**").hasAuthority("COMPANY")
                 .requestMatchers(HttpMethod.DELETE,"/api/postings/**").hasAuthority("COMPANY")
