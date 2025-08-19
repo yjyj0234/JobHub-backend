@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/group-chat")
@@ -34,9 +35,18 @@ public class GroupChatController {
         return service.myRooms();
     }
 
+    //방 삭제
+    @DeleteMapping("/rooms/{roomId}")
+    public void deleteRoom(@PathVariable("roomId") Long roomId, Principal principal) {
+        service.deleteRoom(roomId, principal);
+    }
+
     // 참가/나가기
     @PostMapping("/rooms/{roomId}/join")
-    public void join(@PathVariable("roomId") Long roomId) { service.joinRoom(roomId); }
+    public Map<String, Object> join(@PathVariable("roomId") Long roomId) {
+    Long uid = service.joinRoom(roomId);
+    return Map.of("userId", uid);
+}
 
     @DeleteMapping("/rooms/{roomId}/leave")
     public void leave(@PathVariable("roomId") Long roomId) { service.leaveRoom(roomId); }
@@ -52,6 +62,12 @@ public class GroupChatController {
     @GetMapping("/rooms/explore")
 public List<RoomResDto> exploreRooms() {
     return service.exploreRooms();
+}
+
+//방 이름가져오기
+@GetMapping("/rooms/{roomId}")
+public RoomResDto getRoom(@PathVariable("roomId") Long roomId) {
+    return service.getRoom(roomId);
 }
 
     /* ===== STOMP =====

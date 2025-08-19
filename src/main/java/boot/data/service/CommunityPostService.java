@@ -129,6 +129,7 @@ public class CommunityPostService {
                     String userName = (authorId == null)
                             ? "탈퇴회원"
                             : nameMap.getOrDefault(authorId, "탈퇴회원");
+                            
                     return toDto(p, curr, cmtCnt, userName, owner);
                 })
                 .toList();

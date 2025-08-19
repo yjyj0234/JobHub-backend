@@ -2,7 +2,9 @@ package boot.data.entity;
 
 import java.time.LocalDateTime;
 
+
 import org.hibernate.annotations.Comment;
+
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -47,4 +49,6 @@ public class GroupChatRooms {
 	@Comment("생성일")
 	@Builder.Default
 	private LocalDateTime createdAt = LocalDateTime.now();
+
+
 } 

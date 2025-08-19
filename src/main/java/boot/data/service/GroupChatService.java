@@ -8,6 +8,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import boot.data.dto.*;
 import boot.data.entity.*;
@@ -54,7 +56,7 @@ public class GroupChatService {
 
     /* 방 참가 */
     @Transactional
-    public void joinRoom(Long roomId) {
+    public Long joinRoom(Long roomId) {
         Long uid = currentUser.idOrThrow();
         Users me = usersRepo.findById(uid)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음: " + uid));
@@ -69,6 +71,7 @@ public class GroupChatService {
                     .build();
             membersRepo.save(m);
         }
+        return uid; // 참가한 사용자의 ID 반환
     }
 
     /* 방 나가기 */
@@ -84,6 +87,13 @@ public class GroupChatService {
         return roomsRepo.findMyRooms(uid).stream()
                 .map(this::toRoomRes)
                 .toList();
+    }
+
+    //방이름가져오기
+    public RoomResDto getRoom(Long roomId) {
+        GroupChatRooms room = roomsRepo.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+        return toRoomRes(room);
     }
 
     /* 메시지 히스토리 */
@@ -113,7 +123,7 @@ private Long resolveUidFromPrincipal(Principal principal) {
     if (principal == null) throw new IllegalStateException("인증 필요");
 
     // 1) Authentication인 경우 principal 객체에서 꺼내보기
-    if (principal instanceof org.springframework.security.core.Authentication auth) {
+    if (principal instanceof Authentication auth) {
         Object p = auth.getPrincipal();
         // (1) 커스텀 AuthUser에 id가 있는 경우
         if (p != null && p.getClass().getSimpleName().equals("AuthUser")) {
@@ -125,7 +135,7 @@ private Long resolveUidFromPrincipal(Principal principal) {
             } catch (Exception ignore) {}
         }
         // (2) UserDetails 사용자명에 uid를 담는 경우
-        if (p instanceof org.springframework.security.core.userdetails.UserDetails ud) {
+        if (p instanceof UserDetails ud) {
             try { return Long.parseLong(ud.getUsername()); } catch (Exception ignore) {}
         }
     }
@@ -140,7 +150,7 @@ private Long resolveUidFromPrincipal(Principal principal) {
     throw new IllegalStateException("STOMP Principal에서 uid 추출 실패: " + principal.getName());
 }
 
-
+// 메시지 전송
 @Transactional
 public MessageDto sendMessage(Long roomId, String message, Long senderId) {
     Users me = usersRepo.findById(senderId)
@@ -173,11 +183,25 @@ public List<RoomResDto> exploreRooms() {
             .toList();
 }
 
-
+// 방 생성자만 방 삭제 가능
+@Transactional
+public void deleteRoom(Long roomId, Principal principal) {
+    Long uid = currentUser.idOrThrow();
+    GroupChatRooms room = roomsRepo.findById(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+    if (!room.getCreatedBy().getId().equals(uid)) {
+        throw new IllegalStateException("not room creator: " + roomId);
+    }
+        messagesRepo.deleteByRoom_Id(roomId);
+        membersRepo.deleteByRoom_Id(roomId);
+        roomsRepo.delete(room);
+    messagingTemplate.convertAndSend("/topic/rooms", exploreRooms());
+}
 
     /* ===== Helper ===== */
 
     private RoomResDto toRoomRes(GroupChatRooms room) {
+        boolean isOwner = currentUser.idOrThrow().equals(room.getCreatedBy().getId());
         int memberCnt = membersRepo.countByRoom_Id(room.getId()); // 방 멤버 수
         var lastOpt = messagesRepo.findTop1ByRoom_IdOrderByIdDesc(room.getId()); // 마지막 메시지 조회
 
@@ -187,6 +211,7 @@ public List<RoomResDto> exploreRooms() {
                 .createdBy(room.getCreatedBy().getId()) // Users → id 추출
                 .createdAt(room.getCreatedAt())
                 .memberCount(memberCnt)
+                .isOwner(isOwner)
                 .lastMessage(lastOpt.map(GroupChatMessages::getMessage).orElse(null))
                 .lastSentAt(lastOpt.map(GroupChatMessages::getSentAt).orElse(null))
                 .build();
