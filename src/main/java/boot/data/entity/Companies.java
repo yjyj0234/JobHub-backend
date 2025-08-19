@@ -63,7 +63,6 @@ public class Companies {
      */
     @OneToOne(mappedBy = "company", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private CompanyDetails companyDetails;
-     
     /**
      * 회사의 모든 채용공고 (1:N 관계)
      * 조회 시 사용 주의 (성능 이슈 가능)
@@ -85,5 +84,11 @@ public class Companies {
     @Column(name = "active_job_count")
     @Comment("현재 진행중인 채용공고 수")
     private Integer activeJobCount = 0;
+
+     //기업 소유자 (기업회원과 1:1 관계)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", unique = true)
+    @Comment("기업 소유자 (Users 테이블의 COMPANY 타입 회원)")
+    private Users owner;
     
 }

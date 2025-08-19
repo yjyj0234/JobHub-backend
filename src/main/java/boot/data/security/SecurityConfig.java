@@ -56,11 +56,13 @@ public class SecurityConfig {
                     "/jobpostinglist/**",
                     "/api/jobpostinglist/**",
                     "/group-chat/rooms",
-                    "/api/jobs/**"
+                    "/api/jobs/**","/api/company/industries", "/api/company/company-sizes"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
 
-                // 2) 회사 전용(공고 등록 페이지/API)
+                
+                // 2) 회사 전용(공고 등록 페이지/API)회사전용 페이지
+                .requestMatchers("/api/company/profile", "/api/company/profile/**").hasAnyAuthority("COMPANY","ADMIN")
                 .requestMatchers("/jobposting", "/jobposting/**").hasAnyAuthority("COMPANY","ADMIN")
 
                 // 3) 이력서: 전부 USER만 접근 (GET 공개 원하면 아래 주석 참고)
