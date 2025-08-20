@@ -96,6 +96,25 @@ public Long joinRoom(Long roomId) {
     return uid;
 }
 
+    // 방 멤버 목록 조회
+    public List<MemberDto> getRoomMembers(Long roomId) {
+    // 방 존재 여부 체크
+    GroupChatRooms room = roomsRepo.findById(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+
+    // 멤버 목록 조회
+    List<GroupChatMembers> members = membersRepo.findByRoom_Id(roomId);
+
+    return members.stream()
+            .map(m -> new MemberDto(
+                    m.getUser().getId(),
+                    userProfilesRepo.findByUserId(m.getUser().getId())
+                            .map(UserProfiles::getName)
+                            .orElse("알 수 없음")
+            ))
+            .toList();
+}
+
     /* 방 나가기 */
     @Transactional
 public void leaveRoom(Long roomId) {

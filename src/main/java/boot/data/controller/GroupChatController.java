@@ -2,6 +2,7 @@ package boot.data.controller;
 
 
 import boot.data.dto.CreateRoomReqDto;
+import boot.data.dto.MemberDto;
 import boot.data.dto.MessageDto;
 import boot.data.dto.SendMessageReqDto;
 import boot.data.dto.RoomResDto;
@@ -56,6 +57,12 @@ public class GroupChatController {
     public List<MessageDto> history(@PathVariable("roomId") Long roomId,
                                     @RequestParam(name = "afterId", required = false) Long afterId) {
         return service.getMessages(roomId, afterId);
+    }
+
+    //맴버 목록
+     @GetMapping("/rooms/{roomId}/members")
+    public List<MemberDto> getRoomMembers(@PathVariable("roomId") Long roomId) {
+        return service.getRoomMembers(roomId);
     }
 
     // 방 탐색
