@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/resumes/{resumeId}/activities")
+@RequestMapping("/api/resumes/{resumeId}/activities") 
 public class ResumeActivityController {
 
     private final ResumeService resumeService;
