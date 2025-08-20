@@ -30,9 +30,13 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(provider);
     }
 
+
+//주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여주석읽어주세여
+//한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게한다미치게
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           JwtAuthenticationFilter jwtFilter) throws Exception {
+                                        JwtAuthenticationFilter jwtFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -56,10 +60,22 @@ public class SecurityConfig {
                     "/jobpostinglist/**",
                     "/api/jobpostinglist/**",
                     "/group-chat/rooms",
-                    "/api/jobs/**",
+                    "/api/jobs/**","/api/company/industries", "/api/company/company-sizes",
+                    "/api/home/**",
+                    "/api/files/view",
                     "/community/**"
                 ).permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/search/**","/api/uploads/**").permitAll()
+
+                
+                // 2) 회사 전용(공고 등록 페이지/API)회사전용 페이지
+                .requestMatchers("/api/company/profile", "/api/company/profile/**").hasAnyAuthority("COMPANY","ADMIN")
+                .requestMatchers("/jobposting", "/jobposting/**").hasAnyAuthority("COMPANY","ADMIN")
+
+               // company만 입장
+                .requestMatchers(HttpMethod.POST, "/api/postings/**").hasAuthority("COMPANY")
+                .requestMatchers(HttpMethod.PUT,  "/api/postings/**").hasAuthority("COMPANY")
+                .requestMatchers(HttpMethod.DELETE,"/api/postings/**").hasAuthority("COMPANY")
 
 
                 //디버그 on
@@ -69,14 +85,14 @@ public class SecurityConfig {
 
                 // 3) 이력서: 전부 USER만 접근 (GET 공개 원하면 아래 주석 참고)
                 // 프로필: 본인 조회/수정만 허용(컨트롤러 @PreAuthorize로 소유자 검사 권장)
-                .requestMatchers(HttpMethod.GET,  "/api/profile/**").hasAuthority("USER")
-                .requestMatchers(HttpMethod.PUT,  "/api/profile/**").hasAuthority("USER")
+                .requestMatchers(HttpMethod.GET, "/api/profile/me").hasAuthority("COMPANY")
+                
                  // 이력서 *****순서 중요: 더 구체적인 permitAll이 먼저 와야 합니다.
-                 .requestMatchers(HttpMethod.GET, "/api/resumes/public/**").permitAll()
-                 .requestMatchers(HttpMethod.GET, "/api/resumes/**").hasAuthority("USER")
-                 .requestMatchers(HttpMethod.POST, "/api/resumes/**").hasAuthority("USER")
-                 .requestMatchers(HttpMethod.PUT,  "/api/resumes/**").hasAuthority("USER")
-                 .requestMatchers(HttpMethod.DELETE,"/api/resumes/**").hasAuthority("USER")
+                .requestMatchers(HttpMethod.GET, "/api/resumes/public/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/resumes/**").hasAuthority("USER")
+                .requestMatchers(HttpMethod.POST, "/api/resumes/**").hasAuthority("USER")
+                .requestMatchers(HttpMethod.PUT,  "/api/resumes/**").hasAuthority("USER")
+                .requestMatchers(HttpMethod.DELETE,"/api/resumes/**").hasAuthority("USER")
                 // ※ 만약 GET만 공개하고 싶다면 위 한 줄을 지우고 아래 두 줄로 교체
                 // .requestMatchers(HttpMethod.GET, "/resumes/**").permitAll()
                 // .requestMatchers("/resumes", "/resumes/**").hasAuthority("USER")

@@ -1,3 +1,4 @@
+// src/main/java/boot/data/dto/JobDetailResponseDto.java
 package boot.data.dto;
 
 import java.time.LocalDateTime;
@@ -7,11 +8,16 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import boot.data.entity.JobPostings;
 import boot.data.entity.JobPostingCategories;
 import boot.data.entity.JobPostingLocations;
-import lombok.*;
+import boot.data.entity.JobPostingConditions;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
@@ -22,51 +28,131 @@ public class JobDetailResponseDto {
 
     private Long id;
     private String title;
-
-    // companies.name
     private String companyName;
 
-    // 마감정보
-    private String closeType;             // DEADLINE / UNTIL_FILLED / CONTINUOUS / PERIODIC
-    private LocalDateTime closeDate;      // 엔티티가 LocalDateTime이므로 그대로 반환
+    /** DEADLINE / UNTIL_FILLED / CONTINUOUS / PERIODIC */
+    private String closeType;
+    private LocalDateTime closeDate;
 
-    // 메타
     private Integer viewCount;
     private Integer applicationCount;
 
-    // 본문
+    /** presigned URL 등이 반영된 최종 HTML */
     private String description;
 
-    // 프론트에서 표시용(없으면 렌더 안함)
-    private List<LocationDto> locations;     // [{ regionId, name, isPrimary }]
-    private List<CategoryDto> categories;    // [{ categoryId, name, isPrimary }]
-    private List<String> skills;             // 엔티티에 없으면 빈 리스트
+    /** 대표 1개만 내려도 되지만, 호환 위해 List 유지 */
+    private List<LocationDto> locations;
+    private List<CategoryDto> categories;
+
+    // 임시/옵션 필드들(엔티티 없으면 빈 리스트)
+    private List<String> skills;
     private List<String> responsibilities;
     private List<String> qualifications;
     private List<String> preferences;
     private List<String> benefits;
+
     private String homepage;
 
-    @Getter @Builder @NoArgsConstructor @AllArgsConstructor
+    /** 프론트에서 기대하는 중첩 객체(스네이크 케이스 직렬화) */
+    private ConditionsDto conditions;
+
+    /** 재택근무 가능 여부 (DB tinyint(1): 1=가능, 0=불가) */
+    private Boolean isRemote;
+
+    // ------------------------
+    // Nested DTOs
+    // ------------------------
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class LocationDto {
-        private Integer regionId;    // regions.id (INT 스키마)
-        private String name;         // regions.name
-        private Boolean isPrimary;
+        private Integer regionId;
+        private String name;       // 예: "서울특별시 강남구" (백엔드에서 합성)
+        private Boolean isPrimary; // 대표 지역 여부
     }
 
-    @Getter @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CategoryDto {
-        private Integer categoryId;  // job_categories.id (INT 스키마)
-        private String name;         // job_categories.name
+        private Integer categoryId;
+        private String name;
         private Boolean isPrimary;
     }
 
-    // ---- mapper ----
-    public static JobDetailResponseDto from(
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ConditionsDto {
+        @JsonProperty("employment_type")
+        private String employmentType;
+
+        @JsonProperty("education_level")
+        private String educationLevel;
+
+        @JsonProperty("experience_level")
+        private String experienceLevel;
+
+        @JsonProperty("min_experience_years")
+        private Short minExperienceYears;
+
+        @JsonProperty("max_experience_years")
+        private Short maxExperienceYears;
+
+        @JsonProperty("salary_type")
+        private String salaryType;
+
+        @JsonProperty("min_salary")
+        private Integer minSalary;
+
+        @JsonProperty("max_salary")
+        private Integer maxSalary;
+
+        @JsonProperty("work_schedule")
+        private String workSchedule;
+
+        private String etc;
+
+        public static ConditionsDto from(JobPostingConditions c) {
+            if (c == null) return null;
+            return ConditionsDto.builder()
+                    .employmentType(c.getEmploymentType() != null ? c.getEmploymentType().name() : null)
+                    .educationLevel(c.getEducationLevel() != null ? c.getEducationLevel().name() : null)
+                    .experienceLevel(c.getExperienceLevel() != null ? c.getExperienceLevel().name() : null)
+                    .minExperienceYears(c.getMinExperienceYears())
+                    .maxExperienceYears(c.getMaxExperienceYears())
+                    .salaryType(c.getSalaryType() != null ? c.getSalaryType().name() : null)
+                    .minSalary(c.getMinSalary())
+                    .maxSalary(c.getMaxSalary())
+                    .workSchedule(c.getWorkSchedule())
+                    .etc(c.getEtc())
+                    .build();
+        }
+    }
+
+    // ------------------------
+    // Factory methods
+    // ------------------------
+
+    /**
+     * 이미 합성된 지역명(LocationDto)을 전달받는 버전.
+     * 제네릭 타입 소거 충돌을 피하기 위해 이름을 fromResolvedLocations 로 분리.
+     */
+    public static JobDetailResponseDto fromResolvedLocations(
             JobPostings j,
-            List<JobPostingLocations> locs,
-            List<JobPostingCategories> cats
+            List<LocationDto> locs,
+            List<JobPostingCategories> cats,
+            JobPostingConditions cond,
+            String descriptionHtml
     ) {
+        String finalDesc = (descriptionHtml != null && !descriptionHtml.isBlank())
+                ? descriptionHtml
+                : (j.getDescription() != null ? j.getDescription() : null);
+
         return JobDetailResponseDto.builder()
                 .id(j.getId())
                 .title(j.getTitle())
@@ -75,10 +161,59 @@ public class JobDetailResponseDto {
                 .closeDate(j.getCloseDate())
                 .viewCount(j.getViewCount())
                 .applicationCount(j.getApplicationCount())
-                .description(j.getDescription())
+                .description(finalDesc)
+
+                // 이미 완성된 LocationDto 리스트 그대로 사용
+                .locations(safe(locs))
+
+                .categories(safe(cats).stream().map(c -> CategoryDto.builder()
+                        .categoryId(c.getJobCategory() != null ? c.getJobCategory().getId() : null)
+                        .name(c.getJobCategory() != null ? c.getJobCategory().getName() : null)
+                        .isPrimary(c.isPrimary())
+                        .build()
+                ).collect(Collectors.toList()))
+
+                .skills(Collections.emptyList())
+                .responsibilities(Collections.emptyList())
+                .qualifications(Collections.emptyList())
+                .preferences(Collections.emptyList())
+                .benefits(Collections.emptyList())
+                .homepage(null)
+
+                .conditions(ConditionsDto.from(cond))
+                .isRemote(j.isRemote()) // or (j.getIsRemote() == 1)
+                .build();
+    }
+
+    /**
+     * 엔티티(JobPostingLocations)를 그대로 받아서 DTO로 변환하는 일반 버전.
+     */
+    public static JobDetailResponseDto from(
+            JobPostings j,
+            List<JobPostingLocations> locs,
+            List<JobPostingCategories> cats,
+            JobPostingConditions cond,
+            String descriptionHtml
+    ) {
+        String finalDesc = (descriptionHtml != null && !descriptionHtml.isBlank())
+                ? descriptionHtml
+                : (j.getDescription() != null ? j.getDescription() : null);
+
+        return JobDetailResponseDto.builder()
+                .id(j.getId())
+                .title(j.getTitle())
+                .companyName(j.getCompany() != null ? j.getCompany().getName() : null)
+                .closeType(j.getCloseType() != null ? j.getCloseType().name() : null)
+                .closeDate(j.getCloseDate())
+                .viewCount(j.getViewCount())
+                .applicationCount(j.getApplicationCount())
+                .description(finalDesc)
 
                 .locations(safe(locs).stream().map(l -> LocationDto.builder()
                         .regionId(l.getRegion() != null ? l.getRegion().getId() : null)
+                        // 여기서는 "부모 + 자식" 합성을 서비스에서 해오지 않는다면 child 이름만 내려감.
+                        // 합성본을 쓰고 싶다면 JobDetailService에서 만든 fullName을 LocationDto.name 으로 넘기고,
+                        // 이 메서드 대신 fromResolvedLocations(...)을 사용하세요.
                         .name(l.getRegion() != null ? l.getRegion().getName() : null)
                         .isPrimary(l.isPrimary())
                         .build()
@@ -91,17 +226,36 @@ public class JobDetailResponseDto {
                         .build()
                 ).collect(Collectors.toList()))
 
-                // 아래 컬렉션/필드는 네 엔티티에 없으므로 기본값만
                 .skills(Collections.emptyList())
                 .responsibilities(Collections.emptyList())
                 .qualifications(Collections.emptyList())
                 .preferences(Collections.emptyList())
                 .benefits(Collections.emptyList())
                 .homepage(null)
+
+                .conditions(ConditionsDto.from(cond))
+                .isRemote(j.isRemote())
                 .build();
     }
 
+    /**
+     * 호환용(예전 호출부): cond/description 없이 호출 → 내부 위임
+     */
+    public static JobDetailResponseDto from(
+            JobPostings j,
+            List<JobPostingLocations> locs,
+            List<JobPostingCategories> cats
+    ) {
+        return from(j, locs, cats, null, null);
+    }
+
+    // ------------------------
+    // Utils
+    // ------------------------
+
     private static <T> List<T> safe(List<T> list) {
-        return list == null ? Collections.emptyList() : list.stream().filter(Objects::nonNull).collect(Collectors.toList());
+        return list == null
+                ? Collections.emptyList()
+                : list.stream().filter(Objects::nonNull).collect(Collectors.toList());
     }
 }
