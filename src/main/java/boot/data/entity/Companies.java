@@ -63,7 +63,6 @@ public class Companies {
      */
     @OneToOne(mappedBy = "company", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private CompanyDetails companyDetails;
-     
     /**
      * 회사의 모든 채용공고 (1:N 관계)
      * 조회 시 사용 주의 (성능 이슈 가능)
@@ -85,7 +84,6 @@ public class Companies {
     @Column(name = "active_job_count")
     @Comment("현재 진행중인 채용공고 수")
     private Integer activeJobCount = 0;
-    
 
     //owner_id
     @ManyToOne(fetch = FetchType.LAZY)
