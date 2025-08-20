@@ -58,7 +58,7 @@ public class HomeController {
      * 채용공고 좋아요 토글
      */
     @PostMapping("/likes/{jobPostingId}")
-    @PreAuthorize("hasAnyRole('USER', 'COMPANY')")
+    @PreAuthorize("hasAnyAuthority('USER', 'COMPANY')")
     public ResponseEntity<?> toggleLike(@PathVariable Long jobPostingId) {
         boolean isLiked = likeService.toggleLike(jobPostingId);
         

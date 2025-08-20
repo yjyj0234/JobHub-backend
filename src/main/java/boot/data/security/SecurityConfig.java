@@ -56,7 +56,8 @@ public class SecurityConfig {
                     "/jobpostinglist/**",
                     "/api/jobpostinglist/**",
                     "/group-chat/rooms",
-                    "/api/jobs/**","/api/company/industries", "/api/company/company-sizes"
+                    "/api/jobs/**","/api/company/industries", "/api/company/company-sizes",
+                    "/api/home/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/search/**").permitAll()
 

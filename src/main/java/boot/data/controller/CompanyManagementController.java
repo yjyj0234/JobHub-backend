@@ -34,7 +34,7 @@ public class CompanyManagementController {
      * 내 기업 정보 조회
      */
     @GetMapping("/profile")
-    @PreAuthorize("hasRole('COMPANY','ADMIN')")
+    @PreAuthorize("hasAnyAuthority('COMPANY','ADMIN')")
     public ResponseEntity<CompanyProfileDto> getMyCompanyProfile() {
         try {
             CompanyProfileDto profile = companyManagementService.getMyCompanyProfile();
@@ -49,7 +49,7 @@ public class CompanyManagementController {
      * 기업 정보 저장 (생성/수정)
      */
     @PutMapping("/profile")
-    @PreAuthorize("hasRole('COMPANY','ADMIN')")
+    @PreAuthorize("hasAnyAuthority('COMPANY','ADMIN')")
     public ResponseEntity<?> saveCompanyProfile(
             @Valid @RequestBody CompanyProfileRequest request) {
         try {
@@ -72,7 +72,7 @@ public class CompanyManagementController {
      * 기업 정보 존재 여부 확인
      */
     @GetMapping("/profile/exists")
-    @PreAuthorize("hasRole('COMPANY','ADMIN')")
+    @PreAuthorize("hasAnyAuthority('COMPANY','ADMIN')")
     public ResponseEntity<?> hasCompanyProfile() {
         try {
             boolean exists = companyManagementService.hasCompanyProfile();
@@ -88,7 +88,7 @@ public class CompanyManagementController {
      * 기업 정보 삭제
      */
     @DeleteMapping("/profile")
-    @PreAuthorize("hasRole('COMPANY','ADMIN')")
+    @PreAuthorize("hasAnyAuthority('COMPANY','ADMIN')")
     public ResponseEntity<?> deleteCompanyProfile() {
         try {
             companyManagementService.deleteCompanyProfile();
