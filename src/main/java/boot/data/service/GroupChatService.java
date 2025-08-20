@@ -1,6 +1,7 @@
 package boot.data.service;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -56,30 +57,76 @@ public class GroupChatService {
 
     /* 방 참가 */
     @Transactional
-    public Long joinRoom(Long roomId) {
-        Long uid = currentUser.idOrThrow();
-        Users me = usersRepo.findById(uid)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 없음: " + uid));
+public Long joinRoom(Long roomId) {
+    Long uid = currentUser.idOrThrow();
+    Users me = usersRepo.findById(uid)
+            .orElseThrow(() -> new IllegalArgumentException("사용자 없음: " + uid));
 
-        GroupChatRooms room = roomsRepo.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+    GroupChatRooms room = roomsRepo.findById(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
 
-        if (!membersRepo.existsByRoom_IdAndUser_Id(roomId, uid)) {
-            GroupChatMembers m = GroupChatMembers.builder()
-                    .room(room)
-                    .user(me) // ✅ Users 객체로 세팅
-                    .build();
-            membersRepo.save(m);
-        }
-        return uid; // 참가한 사용자의 ID 반환
+    boolean isNew = false;
+    if (!membersRepo.existsByRoom_IdAndUser_Id(roomId, uid)) {
+        GroupChatMembers m = GroupChatMembers.builder()
+                .room(room)
+                .user(me)
+                .build();
+        membersRepo.save(m);
+        isNew = true;
     }
+
+    // ✅ 처음 들어온 사람에게만 '입장했습니다' 브로드캐스트
+    if (isNew) {
+        String joinerName = userProfilesRepo.findByUserId(uid)
+                .map(UserProfiles::getName)
+                .orElse("알 수 없음");
+
+        MessageDto dto = new MessageDto();
+        dto.setId(null);
+        dto.setSenderId(uid);
+        dto.setSenderName(joinerName);
+        dto.setMessage(joinerName + " 님이 입장했습니다.");
+        dto.setSentAt(LocalDateTime.now());
+        dto.setSystem(true);
+        dto.setType("JOIN");
+
+        messagingTemplate.convertAndSend("/topic/rooms/" + roomId, dto);
+    }
+
+    return uid;
+}
 
     /* 방 나가기 */
     @Transactional
-    public void leaveRoom(Long roomId) {
-        Long uid = currentUser.idOrThrow();
-        membersRepo.deleteByRoom_IdAndUserId(roomId, uid);
-    }
+public void leaveRoom(Long roomId) {
+    Long uid = currentUser.idOrThrow();
+
+    GroupChatRooms room = roomsRepo.findById(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+
+    // 나가기 이전에 이름 확보
+    String leaverName = userProfilesRepo.findByUserId(uid)
+            .map(UserProfiles::getName)
+            .orElse("알 수 없음");
+
+    // 멤버 삭제
+    membersRepo.deleteByRoom_IdAndUserId(roomId, uid); // 주의: 메서드 시그니처 확인
+    
+
+
+    
+    // ✅ 저장 없이 즉시 브로드캐스트
+    MessageDto dto = new MessageDto();
+    dto.setId(null);
+    dto.setSenderId(uid);
+    dto.setSenderName(leaverName);
+    dto.setMessage(leaverName + " 님이 방을 나갔습니다.");
+    dto.setSentAt(java.time.LocalDateTime.now());
+    dto.setSystem(true);
+    dto.setType("LEAVE");
+
+    messagingTemplate.convertAndSend("/topic/rooms/" + roomId, dto);
+}
 
     /* 내 방 목록 */
     public List<RoomResDto> myRooms() {
