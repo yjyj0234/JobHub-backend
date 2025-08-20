@@ -58,13 +58,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Authentication auth = jwtTokenProvider.getAuthentication(token);
                 if (auth != null) {
                     SecurityContextHolder.getContext().setAuthentication(auth);
-<<<<<<< HEAD
-                    log.debug("[JWT] authentication set: name={}, authorities={}",
-                            auth.getName(), auth.getAuthorities());
-=======
                     log.debug("[JWT] authentication SET on {} -> name={}, authorities={}",
                               uri, auth.getName(), auth.getAuthorities());
->>>>>>> c4f32858c050bf198c87629cea13e5d7433495ed
                 } else {
                     req.setAttribute("authError", "AUTH_BUILD_FAILED");
                     log.debug("[JWT] valid token but failed to build Authentication on {}", uri);

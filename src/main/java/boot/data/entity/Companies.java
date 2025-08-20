@@ -85,13 +85,6 @@ public class Companies {
     @Comment("현재 진행중인 채용공고 수")
     private Integer activeJobCount = 0;
 
-     //기업 소유자 (기업회원과 1:1 관계)
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", unique = true)
-    @Comment("기업 소유자 (Users 테이블의 COMPANY 타입 회원)")
-    private Users owner;
-    
-
     //owner_id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", unique = true) // DB 스키마와 일치(UNIQUE)

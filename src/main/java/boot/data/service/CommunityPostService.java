@@ -54,31 +54,7 @@ public class CommunityPostService {
 
         CommunityPosts saved = postsRepository.save(entity);
 
-<<<<<<< HEAD
-        CommunityPosts saved = communityPostsRepository.save(post);
-
-        CommunityPostDto res = new CommunityPostDto();
-        res.setId(saved.getId());
-        res.setUserId(saved.getUser().getId());
-        res.setTitle(saved.getTitle());
-        res.setContent(saved.getContent());
-        res.setViewCount(saved.getViewCount());
-        res.setCreatedAt(saved.getCreatedAt());
-        res.setUpdatedAt(saved.getUpdatedAt());
-        return res;
-    }
-
-    // === Read One ===
-    @Transactional(readOnly = true)
-    public CommunityPostDto getOne(Long id) {
-        CommunityPosts p = communityPostsRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found")); // 404로
-        
-        // 유저 정보 가져오기
-        String userName = userProfilesRepository.findByUserId(p.getUser().getId())
-=======
         String userName = profilesRepository.findByUserId(uid)
->>>>>>> c4f32858c050bf198c87629cea13e5d7433495ed
                 .map(UserProfiles::getName)
                 .orElse("탈퇴회원");
 
