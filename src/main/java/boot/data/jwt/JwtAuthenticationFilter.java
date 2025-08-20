@@ -26,36 +26,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    /**
-     * CORS 프리플라이트 등 굳이 검사할 필요 없는 요청은 스킵
-     */
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String method = request.getMethod();
-        if ("OPTIONS".equalsIgnoreCase(method)) return true; // preflight
-        // 필요하다면 공개 경로도 스킵 가능(선택)
-        // if (PATH_MATCHER.match("/auth/**", request.getRequestURI())) return true;
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true; // preflight
+        // 공개 경로 스킵 원하면 여기에 추가
         return false;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
             throws ServletException, IOException {
 
+        final String uri = req.getRequestURI();
         try {
-            final String token = resolveToken(request);
+            final String token = resolveToken(req);
 
             if (token == null || token.isBlank()) {
-                // 토큰이 없으면 그냥 통과 (익명 접근은 이후 Security 설정이 처리)
-                chain.doFilter(request, response);
+                log.debug("[JWT] no token on {}", uri);
+                chain.doFilter(req, res);
                 return;
             }
 
             if (!jwtTokenProvider.validateToken(token)) {
-                // 유효하지 않은 토큰: 엔트리포인트에서 401을 만들 수 있도록 체인 진행
-                request.setAttribute("authError", "INVALID_JWT");
-                log.debug("[JWT] invalid token for path={}", request.getRequestURI());
-                chain.doFilter(request, response);
+                req.setAttribute("authError", "INVALID_JWT");
+                log.debug("[JWT] invalid token on {}", uri);
+                chain.doFilter(req, res);
                 return;
             }
 
@@ -63,48 +58,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Authentication auth = jwtTokenProvider.getAuthentication(token);
                 if (auth != null) {
                     SecurityContextHolder.getContext().setAuthentication(auth);
+<<<<<<< HEAD
                     log.debug("[JWT] authentication set: name={}, authorities={}",
                             auth.getName(), auth.getAuthorities());
+=======
+                    log.debug("[JWT] authentication SET on {} -> name={}, authorities={}",
+                              uri, auth.getName(), auth.getAuthorities());
+>>>>>>> c4f32858c050bf198c87629cea13e5d7433495ed
                 } else {
-                    // 토큰은 유효했지만 인증 객체를 만들지 못한 경우
-                    request.setAttribute("authError", "AUTH_BUILD_FAILED");
-                    log.debug("[JWT] authentication object is null (valid token but no auth)");
+                    req.setAttribute("authError", "AUTH_BUILD_FAILED");
+                    log.debug("[JWT] valid token but failed to build Authentication on {}", uri);
                 }
             } else {
-                log.trace("[JWT] SecurityContext already has authentication; skipping set");
+                log.trace("[JWT] context already has authentication on {}", uri);
             }
         } catch (Exception e) {
-            // 토큰 파싱/검증 중 예외가 나도 글로벌 핸들러에게 맡기고 체인 진행
-            request.setAttribute("authError", e.getClass().getSimpleName());
-            log.debug("[JWT] exception during filter: {} on path={}", e.toString(), request.getRequestURI());
+            req.setAttribute("authError", e.getClass().getSimpleName());
+            log.debug("[JWT] exception {} on {}", e.toString(), uri);
         }
 
-        chain.doFilter(request, response);
+        chain.doFilter(req, res);
     }
 
-    /**
-     * Authorization 헤더(Bearer) 우선, 없으면 쿠키(JWT)에서 추출
-     */
     private String resolveToken(HttpServletRequest request) {
-        // 1) Authorization: Bearer <token> (대소문자 유연)
         String authz = request.getHeader("Authorization");
         if (authz != null) {
             int idx = authz.indexOf(' ');
-            if (idx > 0) {
-                String scheme = authz.substring(0, idx).trim();
-                if ("Bearer".equalsIgnoreCase(scheme)) {
-                    return authz.substring(idx + 1).trim();
-                }
+            if (idx > 0 && "Bearer".equalsIgnoreCase(authz.substring(0, idx).trim())) {
+                return authz.substring(idx + 1).trim();
             }
         }
-        // 2) HttpOnly 쿠키 "JWT"
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
-            for (Cookie c : cookies) {
-                if ("JWT".equals(c.getName())) {
-                    return c.getValue();
-                }
-            }
+            for (Cookie c : cookies) if ("JWT".equals(c.getName())) return c.getValue();
         }
         return null;
     }

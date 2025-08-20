@@ -12,6 +12,7 @@ public interface CompaniesRepository extends JpaRepository<Companies, Long> {
     // Companies 엔티티에 대한 CRUD 기능을 자동으로 제공합니다.
     // JpaRepository를 상속받는 것만으로도 기본적인 저장(save), 조회(findById), 삭제(delete) 등의 메소드는 자동으로 구현됩니다.
     
+<<<<<<< HEAD
     //소유자 ID로 기업 조회
     Optional<Companies> findByOwnerId(Long ownerId);
     
@@ -28,4 +29,8 @@ public interface CompaniesRepository extends JpaRepository<Companies, Long> {
     // 업자번호 중복 체크 (자신 제외)
     @Query("SELECT COUNT(c) > 0 FROM Companies c WHERE c.businessNumber = :businessNumber AND c.id != :companyId")
     boolean existsByBusinessNumberExcludingId(@Param("businessNumber") String businessNumber, @Param("companyId") Long companyId);
+=======
+    //오너기준 조회
+    Optional<Companies> findByOwner_Id(Long ownerId);
+>>>>>>> c4f32858c050bf198c87629cea13e5d7433495ed
 }

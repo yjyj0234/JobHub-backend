@@ -1,12 +1,8 @@
 package boot.data.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -26,34 +22,39 @@ import boot.data.repository.UsersRepository;
 import boot.data.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 
-
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CommunityPostService {
 
-    private final CommunityPostsRepository communityPostsRepository;
+    private final CommunityPostsRepository postsRepository;
     private final UsersRepository usersRepository;
-    private final UserProfilesRepository userProfilesRepository;
-    private final CurrentUser currentUser; 
-    private final CommunityPostCommentsRepository commentsRepositor; // 댓글 수를 가져오기 위한 레포지토리
-    // 서비스 레이어에서 현재 로그인 사용자에 접근하기 위한 헬퍼
-    // === Create ===
+    private final UserProfilesRepository profilesRepository;
+    private final CommunityPostCommentsRepository commentsRepository;
+    private final CurrentUser currentUser;
+
+    /* ==========================
+       Create
+       ========================== */
     @Transactional
     public CommunityPostDto insertDto(CommunityPostDto dto) {
-        Long id =  currentUser.idOrThrow(); 
-        Users user = usersRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(id + "는 존재하지 않습니다"));
+        Long uid = currentUser.idOrThrow();
+        Users user = usersRepository.findById(uid)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user not found"));
 
-        CommunityPosts post = CommunityPosts.builder()
+        LocalDateTime now = LocalDateTime.now();
+        CommunityPosts entity = CommunityPosts.builder()
+                .title(nullToEmpty(dto.getTitle()))
+                .content(nullToEmpty(dto.getContent()))
+                .viewCount(0)
+                .createdAt(now)
+                .updatedAt(now)
                 .user(user)
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .viewCount(Optional.ofNullable(dto.getViewCount()).orElse(0))
                 .build();
 
-                post.setCreatedAt(LocalDateTime.now());
-                post.setUpdatedAt(LocalDateTime.now());
+        CommunityPosts saved = postsRepository.save(entity);
 
+<<<<<<< HEAD
         CommunityPosts saved = communityPostsRepository.save(post);
 
         CommunityPostDto res = new CommunityPostDto();
@@ -75,108 +76,177 @@ public class CommunityPostService {
         
         // 유저 정보 가져오기
         String userName = userProfilesRepository.findByUserId(p.getUser().getId())
+=======
+        String userName = profilesRepository.findByUserId(uid)
+>>>>>>> c4f32858c050bf198c87629cea13e5d7433495ed
                 .map(UserProfiles::getName)
                 .orElse("탈퇴회원");
 
-                Long currentUserId = null;
-                    try {
-                        currentUserId = currentUser.idOrThrow(); // 로그인 안 했으면 예외
-                    } catch (Exception e) {
-                        // 비로그인 사용자는 null 처리
-                    }
-        
-        CommunityPostDto dto = new CommunityPostDto();
-        dto.setId(p.getId());
-        dto.setTitle(p.getTitle());
-        dto.setContent(p.getContent());
-        dto.setViewCount(Optional.ofNullable(p.getViewCount()).orElse(0));
-        dto.setCreatedAt(Optional.ofNullable(p.getCreatedAt()).orElse(LocalDateTime.now()));
-        dto.setUserId(p.getUser() != null ? p.getUser().getId() : null);
-        dto.setUserName(userName);
-        dto.setOwner(currentUserId != null && currentUserId.equals(p.getUser().getId()));
-        return dto;
+        return toDto(saved,
+                uid,                  // currentUserId
+                0L,                   // commentCount
+                userName,             // userName
+                true                  // owner
+        );
     }
 
-    // === Read List (최신순) ===
-   @Transactional(readOnly = true)
-public List<CommunityPostDto> getList() {
-    List<CommunityPosts> posts = communityPostsRepository.findAll(
-            Sort.by(Sort.Direction.DESC, "id"));
-            if (posts.isEmpty()) return Collections.emptyList();
+    /* ==========================
+       Read One
+       ========================== */
+    public CommunityPostDto getOne(Long id) {
+        CommunityPosts p = postsRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found"));
 
-    // 1) 포스트 ID 모으기
-    List<Long> postIds = posts.stream().map(CommunityPosts::getId).toList();
+        Long curr = safeCurrentUserId();
+        boolean owner = (curr != null) && p.getUser() != null && Objects.equals(curr, p.getUser().getId());
 
-    // 2) 댓글 수 한 번에 집계해서 Map으로
-    List<Object[]> rows = commentsRepositor.countByPostIdIn(postIds);
-    Map<Long, Long> commentCountMap = new HashMap<>();
-    for (Object[] row : rows) {
-        Long postId = (Long) row[0];
-        Long cnt    = (Long) row[1];
-        commentCountMap.put(postId, cnt);
-    }
+        long commentCount = commentsRepository.countByPost_Id(p.getId());
 
-    List<CommunityPostDto> result = new ArrayList<>();
-    for (CommunityPosts post : posts) {
-        Long uid = (post.getUser() != null) ? post.getUser().getId() : null;
-        String userName = (uid == null)
+        String userName = (p.getUser() == null)
                 ? "탈퇴회원"
-                : userProfilesRepository.findByUserId(uid)
+                : profilesRepository.findByUserId(p.getUser().getId())
                     .map(UserProfiles::getName)
                     .orElse("탈퇴회원");
 
-        CommunityPostDto dto = new CommunityPostDto();
-        dto.setId(post.getId());
-        dto.setUserId(uid);
-        dto.setTitle(post.getTitle());
-        dto.setContent(post.getContent());
-        dto.setViewCount(Optional.ofNullable(post.getViewCount()).orElse(0));
-        dto.setCreatedAt(post.getCreatedAt());
-        dto.setUpdatedAt(post.getUpdatedAt());
-        dto.setUserName(userName);
-        dto.setCommentCount(commentCountMap.getOrDefault(post.getId(), 0L)); // 댓글 수 설정
-        result.add(dto);
-    }
-    return result;
-}
-
-    // === Update ===
-    @Transactional
-    public CommunityPostDto update(Long id, CommunityPostDto dto) {
-        CommunityPosts post = communityPostsRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("게시글 없음: " + id));
-
-        if (dto.getTitle() != null) post.setTitle(dto.getTitle());
-        if (dto.getContent() != null) post.setContent(dto.getContent());
-        post.setUpdatedAt(LocalDateTime.now());
-
-        CommunityPostDto res = new CommunityPostDto();
-        res.setId(post.getId());
-        res.setUserId(post.getUser() != null ? post.getUser().getId() : null);
-        res.setTitle(post.getTitle());
-        res.setContent(post.getContent());
-        res.setViewCount(post.getViewCount());
-        res.setUpdatedAt(post.getUpdatedAt());
-        return res;
+        return toDto(p, curr, commentCount, userName, owner);
     }
 
-    // === Delete ===
-    public void delete(Long id) {
-    CommunityPosts post = communityPostsRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("이미 삭제되었거나 존재하지 않음: " + id));
+    /* ==========================
+       Read List (최신순)
+       ========================== */
+    public List<CommunityPostDto> getList() {
+        List<CommunityPosts> posts = postsRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+        if (posts.isEmpty()) return List.of();
 
-    Long currentUserId = currentUser.idOrThrow(); 
-    if (!post.getUser().getId().equals(currentUserId)) {
-        throw new AccessDeniedException("본인 글만 삭제 가능");
-     }
-            communityPostsRepository.delete(post);
+        Long curr = safeCurrentUserId();
+
+        // 배치로 필요한 키 수집
+        List<Long> postIds = posts.stream().map(CommunityPosts::getId).toList();
+        Set<Long> userIds = posts.stream()
+                .map(CommunityPosts::getUser)
+                .filter(Objects::nonNull)
+                .map(Users::getId)
+                .collect(Collectors.toSet());
+
+        // 댓글 수 벌크 집계
+        Map<Long, Long> commentCntMap = new HashMap<>();
+        for (Object[] row : commentsRepository.countByPostIdIn(postIds)) {
+            Long postId = (Long) row[0];
+            Long cnt = (Long) row[1];
+            commentCntMap.put(postId, cnt);
         }
 
-    // === View Count 증가 ===
+        // 유저 이름 배치 조회
+        Map<Long, String> nameMap = new HashMap<>();
+            for (Long uid : userIds) {
+            String name = profilesRepository.findByUserId(uid)
+            .map(up -> up.getName())
+            .orElse("탈퇴회원");
+            nameMap.put(uid, name);
+        }
+
+        return posts.stream()
+                .map(p -> {
+                    Long authorId = (p.getUser() != null) ? p.getUser().getId() : null;
+                    boolean owner = (curr != null) && authorId != null && curr.equals(authorId);
+                    long cmtCnt = commentCntMap.getOrDefault(p.getId(), 0L);
+                    String userName = (authorId == null)
+                            ? "탈퇴회원"
+                            : nameMap.getOrDefault(authorId, "탈퇴회원");
+                    return toDto(p, curr, cmtCnt, userName, owner);
+                })
+                .toList();
+    }
+
+    /* ==========================
+       Update
+       ========================== */
+    @Transactional
+    public CommunityPostDto update(Long id, CommunityPostDto dto) {
+        CommunityPosts p = postsRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found"));
+
+        Long uid = currentUser.idOrThrow();
+        if (p.getUser() == null || !Objects.equals(p.getUser().getId(), uid)) {
+            throw new AccessDeniedException("작성자만 수정 가능");
+        }
+
+        p.setTitle(nullToEmpty(dto.getTitle()));
+        p.setContent(nullToEmpty(dto.getContent()));
+        p.setUpdatedAt(LocalDateTime.now());
+
+        // 저장은 dirty checking
+        long commentCount = commentsRepository.countByPost_Id(p.getId());
+        String userName = profilesRepository.findByUserId(uid)
+                .map(UserProfiles::getName)
+                .orElse("탈퇴회원");
+
+        return toDto(p, uid, commentCount, userName, true);
+    }
+
+    /* ==========================
+       Delete
+       ========================== */
+    @Transactional
+    public void delete(Long id) {
+        CommunityPosts p = postsRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found"));
+        Long uid = currentUser.idOrThrow();
+        if (p.getUser() == null || !Objects.equals(p.getUser().getId(), uid)) {
+            throw new AccessDeniedException("작성자만 삭제 가능");
+        }
+        postsRepository.delete(p);
+    }
+
+    /* ==========================
+       View Count (동시성 고려)
+       ========================== */
     @Transactional
     public void increaseViewCount(Long id) {
-        CommunityPosts post = communityPostsRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("게시글 없음: " + id));
-        post.setViewCount(post.getViewCount() + 1);
+        // 동시성 안전한 벌크 업데이트 (권장)
+        int updated = postsRepository.increaseViewCount(id);
+        if (updated == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found");
+        }
+
+        // 단순 읽고 +1 (동시성 취약)로 하고 싶으면 아래 주석을 사용
+        /*
+        CommunityPosts p = postsRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found"));
+        Integer vc = Optional.ofNullable(p.getViewCount()).orElse(0);
+        p.setViewCount(vc + 1);
+        // flush는 트랜잭션 종료 시점
+        */
+    }
+
+    /* ==========================
+       Helpers
+       ========================== */
+    private CommunityPostDto toDto(CommunityPosts p,
+                                   Long currentUserId,
+                                   Long commentCount,
+                                   String userName,
+                                   boolean owner) {
+        return CommunityPostDto.builder()
+                .id(p.getId())
+                .title(p.getTitle())
+                .content(p.getContent())
+                .viewCount(Optional.ofNullable(p.getViewCount()).orElse(0))
+                .createdAt(Optional.ofNullable(p.getCreatedAt()).orElse(LocalDateTime.now()))
+                .updatedAt(Optional.ofNullable(p.getUpdatedAt()).orElse(p.getCreatedAt()))
+                .userName(userName)
+                .commentCount(commentCount)
+                .userId(p.getUser() != null ? p.getUser().getId() : null)
+                .owner(owner)
+                .build();
+    }
+
+    private Long safeCurrentUserId() {
+        try { return currentUser.idOrThrow(); }
+        catch (Exception ignored) { return null; }
+    }
+
+    private String nullToEmpty(String s) {
+        return (s == null) ? "" : s;
     }
 }

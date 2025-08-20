@@ -1,6 +1,5 @@
 package boot.data.jobhub;
 
-// S3Config.java (추가)
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +17,6 @@ public class S3Config {
     @Value("${cloud.aws.credentials.accessKey}") String accessKey;
     @Value("${cloud.aws.credentials.secretKey}") String secretKey;
 
-// ✅ S3Client 빈
     @Bean
     public S3Client s3Client() {
         return S3Client.builder()
@@ -31,7 +29,6 @@ public class S3Config {
                 .build();
     }
 
-    // 이미 S3Client 빈이 있다면 그대로 두고, Presigner만 추가
     @Bean
     public S3Presigner s3Presigner() {
         return S3Presigner.builder()

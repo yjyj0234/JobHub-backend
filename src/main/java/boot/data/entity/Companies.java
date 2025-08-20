@@ -91,4 +91,9 @@ public class Companies {
     @Comment("기업 소유자 (Users 테이블의 COMPANY 타입 회원)")
     private Users owner;
     
-}
+
+    //owner_id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", unique = true) // DB 스키마와 일치(UNIQUE)
+    private Users owner;
+    }
