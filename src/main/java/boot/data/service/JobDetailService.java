@@ -1,8 +1,9 @@
-// JobDetailService.java
+// src/main/java/boot/data/service/JobDetailService.java
 package boot.data.service;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,10 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import boot.data.dto.JobDetailResponseDto;
 import boot.data.entity.JobPostings;
+import boot.data.entity.Regions;
 import boot.data.entity.JobPostingCategories;
 import boot.data.entity.JobPostingConditions;
 import boot.data.entity.JobPostingLocations;
 import boot.data.repository.JobPostingsRepository;
+// import boot.data.repository.RegionRepository; // ← 필요 없음
 import boot.data.repository.JobPostingCategoriesRepository;
 import boot.data.repository.JobPostingLocationRepository;
 import boot.data.repository.JobPostingConditionsRepository;
@@ -32,32 +35,63 @@ public class JobDetailService {
     private final JobPostingLocationRepository jobPostingLocationRepository;
     private final JobPostingCategoriesRepository jobPostingCategoriesRepository;
     private final JobPostingConditionsRepository jobPostingConditionsRepository;
+    // private final RegionRepository regionRepository; // ← 삭제 가능
 
-    // ★ presign 발급 서비스 주입
+    // S3 presign 발급
     private final S3StorageService s3StorageService;
 
     @Value("${app.s3.presign-ttl-minutes:30}")
     private long presignTtlMinutes;
 
+    /**
+     * 채용공고 상세
+     */
     @Transactional
     public JobDetailResponseDto getDetail(Long id) {
         JobPostings posting = jobPostingsRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("JobPosting not found: " + id));
 
+        // 조회수 +1
         posting.incrementViewCount();
 
+        // 연관 데이터 조회 (region + region.parent 를 JOIN FETCH로 끌어오면 N+1 방지됨)
         List<JobPostingLocations> locs = jobPostingLocationRepository.findByJobIdWithRegion(id);
         List<JobPostingCategories> cats = jobPostingCategoriesRepository.findByJobIdWithCategory(id);
         JobPostingConditions cond = jobPostingConditionsRepository.findById(id).orElse(null);
 
-        // ★ 핵심: description 치환
+        // “부모 + 자식” 합성된 LocationDto 리스트 생성
+        List<JobDetailResponseDto.LocationDto> locationDtos = locs.stream()
+                .map(l -> {
+                    Regions r = l.getRegion();
+                    String child = (r != null && r.getName() != null) ? r.getName() : "";
+                    Regions p = (r != null) ? r.getParent() : null;
+                    String parent = (p != null && p.getName() != null) ? p.getName() : "";
+                    String full = parent.isEmpty() ? child : (parent + " " + child);
+
+                    return JobDetailResponseDto.LocationDto.builder()
+                            .regionId(r != null ? r.getId() : null)
+                            .name(full)
+                            .isPrimary(l.isPrimary())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // description 내 data-s3-key → presigned URL 치환
         String replacedDesc = rewriteDescriptionWithPresigned(posting.getDescription());
 
-        // ★ 새 오버로드 사용 (cond + 치환된 desc 같이 주입)
-        return JobDetailResponseDto.from(posting, locs, cats, cond, replacedDesc);
+        // 합성된 지역명을 사용하는 팩토리 호출
+        return JobDetailResponseDto.fromResolvedLocations(
+                posting,
+                locationDtos,
+                cats,
+                cond,
+                replacedDesc
+        );
     }
 
-    /** DB에 저장된 description에서 <img data-s3-key="...">를 presigned URL로 교체 */
+    /**
+     * DB에 저장된 description에서 <img data-s3-key="...">를 presigned URL로 교체
+     */
     private String rewriteDescriptionWithPresigned(String html) {
         if (html == null || html.isBlank()) return html;
         try {
@@ -76,7 +110,8 @@ public class JobDetailService {
             }
             return doc.body().html();
         } catch (Exception e) {
-            return html; // 실패하면 원본 반환
+            // 실패 시 원본 반환
+            return html;
         }
     }
 }
