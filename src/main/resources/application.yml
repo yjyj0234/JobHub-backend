@@ -16,6 +16,10 @@ spring:
       idle-timeout: 300000 # 5분
       validation-timeout: 3000
       connection-timeout: 30000
+  config:
+    import:
+    - "classpath:application-secret.yml"
+    - "optional:file:/opt/jobhub-secrets/application-secret.yml"
   #jpa_setting
   jpa:
     hibernate:

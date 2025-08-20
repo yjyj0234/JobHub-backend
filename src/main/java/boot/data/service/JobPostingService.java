@@ -55,8 +55,6 @@ public class JobPostingService {
     @Transactional
     public JobPostings createJobPosting(JobPostingRequestDto dto) {
 
-       
-
         // --- 1. 부모 엔티티(JobPostings) 생성 ---
         JobPostings jobPostings = new JobPostings();
 
@@ -105,22 +103,11 @@ public class JobPostingService {
         var au= currentUser.get()
                 .orElseThrow(()->new SecurityException("인증 정보가 없습니다"));
         Long loginUserId=au.id();
-
-        //권한 체크 : role
-        boolean allowed=
-                au.hasRole("COMPANY") ||au.hasRole("COMPANY_HR") || au.hasRole("EMPLOYER");
-        if(!allowed){
-            throw new SecurityException("기업 권한이 필요합니다.");
-        }
-
-          
-          dto.setCreatedBy(loginUserId);
-            dto.setCompanyId(loginUserId); // ★ 항상 로그인 사용자로 강제
-
+        
 
         // 0-3) 회사/작성자 엔티티 로드
-        Companies company = companiesRepository.findById(dto.getCompanyId())
-                .orElseThrow(() -> new IllegalArgumentException("회사없음: " + dto.getCompanyId()));
+        Companies company = companiesRepository.findByOwnerId(loginUserId)
+        .orElseThrow(() -> new IllegalArgumentException("owner_id=" + loginUserId + " 의 회사가 없습니다."));
 
         Users creator = usersRepository.findById(loginUserId)
                 .orElseThrow(() -> new IllegalArgumentException("작성자 없음: " + loginUserId));

@@ -5,7 +5,16 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import boot.data.dto.resume.ResumeCreateDto;
 import boot.data.dto.resume.ResumeResponse;
@@ -17,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/resumes")
+@RequestMapping("/api/resumes") // 기존 "/resumes" → "/api/resumes"로 변경
 public class ResumeController {
 
     private final ResumeService resumeService;
@@ -27,7 +36,6 @@ public class ResumeController {
     @ResponseStatus(HttpStatus.CREATED)
     public Long create(@AuthenticationPrincipal AuthUser current,
                        @Valid @RequestBody ResumeCreateDto dto) {
-        // ✅ 반드시 로그인 사용자의 ID 사용 (dto.userId 사용 금지)
         return resumeService.createResume(current.id(), dto);
     }
 

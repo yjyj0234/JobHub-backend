@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
+import java.security.Principal;
 
 import java.util.List;
 
@@ -35,25 +36,34 @@ public class GroupChatController {
 
     // 참가/나가기
     @PostMapping("/rooms/{roomId}/join")
-    public void join(@PathVariable Long roomId) { service.joinRoom(roomId); }
+    public void join(@PathVariable("roomId") Long roomId) { service.joinRoom(roomId); }
 
     @DeleteMapping("/rooms/{roomId}/leave")
-    public void leave(@PathVariable Long roomId) { service.leaveRoom(roomId); }
+    public void leave(@PathVariable("roomId") Long roomId) { service.leaveRoom(roomId); }
 
     // 메시지 히스토리
     @GetMapping("/rooms/{roomId}/messages")
-    public List<MessageDto> history(@PathVariable Long roomId,
-                                    @RequestParam(required = false) Long afterId) {
+    public List<MessageDto> history(@PathVariable("roomId") Long roomId,
+                                    @RequestParam(name = "afterId", required = false) Long afterId) {
         return service.getMessages(roomId, afterId);
     }
 
+    // 방 탐색
+    @GetMapping("/rooms/explore")
+public List<RoomResDto> exploreRooms() {
+    return service.exploreRooms();
+}
+
     /* ===== STOMP =====
-       클라가 /app/rooms/{roomId}/send 로 publish 하면 호출됨
+       클라가 /rooms/{roomId}/send 로 publish 하면 호출됨
      */
     @MessageMapping("/rooms/{roomId}/send")
-    public void send(@DestinationVariable Long roomId, SendMessageReqDto req) {
-        // URL의 roomId를 바디에 주입해서 일관성 유지
-        var fixed = new SendMessageReqDto(roomId, req.getMessage());
-        service.sendMessage(fixed);
-    }
+    public void send(@DestinationVariable("roomId") Long roomId, SendMessageReqDto req,
+    Principal principal) {
+  
+
+    // URL의 roomId를 최종 소스로 쓰고, 바디 message 사용
+    service.sendMessageFromPrincipal(roomId, req.getMessage(), principal);
+}
+
 }

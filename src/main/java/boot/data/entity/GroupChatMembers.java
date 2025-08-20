@@ -13,17 +13,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "Group_chat_members")
+@Table(name = "group_chat_members")
 @Builder
-
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // ✅ JPA가 필요로 함
+@AllArgsConstructor
 public class GroupChatMembers {
 	
 	@Id
