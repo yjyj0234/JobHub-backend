@@ -2,6 +2,8 @@ package boot.data.dto;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,4 +22,7 @@ public class RoomResDto {
     private Integer memberCount;
     private String lastMessage;
     private LocalDateTime lastSentAt;
+
+    @JsonProperty("isOwner")
+    private boolean isOwner;
 }

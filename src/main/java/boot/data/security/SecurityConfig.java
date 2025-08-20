@@ -36,7 +36,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           JwtAuthenticationFilter jwtFilter) throws Exception {
+                                        JwtAuthenticationFilter jwtFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -60,12 +60,17 @@ public class SecurityConfig {
                     "/jobpostinglist/**",
                     "/api/jobpostinglist/**",
                     "/group-chat/rooms",
-                    "/api/jobs/**",
+                    "/api/jobs/**","/api/company/industries", "/api/company/company-sizes",
+                    "/api/home/**",
                     "/api/files/view",
                     "/community/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/search/**","/api/uploads/**").permitAll()
 
+                
+                // 2) 회사 전용(공고 등록 페이지/API)회사전용 페이지
+                .requestMatchers("/api/company/profile", "/api/company/profile/**").hasAnyAuthority("COMPANY","ADMIN")
+                .requestMatchers("/jobposting", "/jobposting/**").hasAnyAuthority("COMPANY","ADMIN")
 
                // company만 입장
                 .requestMatchers(HttpMethod.POST, "/api/postings/**").hasAuthority("COMPANY")
@@ -80,8 +85,8 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()   
                 // 3) 이력서: 전부 USER만 접근 (GET 공개 원하면 아래 주석 참고)
                 // 프로필: 본인 조회/수정만 허용(컨트롤러 @PreAuthorize로 소유자 검사 권장)
-                .requestMatchers(HttpMethod.GET,  "/api/profile/**").hasAuthority("USER")
-                .requestMatchers(HttpMethod.PUT,  "/api/profile/**").hasAuthority("USER")
+                .requestMatchers(HttpMethod.GET, "/api/profile/me").hasAuthority("COMPANY")
+                
                  // 이력서 *****순서 중요: 더 구체적인 permitAll이 먼저 와야 합니다.
                  .requestMatchers(HttpMethod.GET, "/api/resumes/public/**").permitAll()
                  .requestMatchers( "/api/resumes/**").hasAuthority("USER")

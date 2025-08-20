@@ -19,4 +19,8 @@ public class MessageDto {
     private LocalDateTime sentAt;
     private String message;
     private boolean mine;
+
+    //채팅방 나가면 알림
+    private boolean system;     // ✅ 시스템 메시지 여부
+    private String type;        // "SYSTEM" | "CHAT" 등 (선택)
 }

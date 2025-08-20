@@ -31,6 +31,7 @@ public class CommunityPostDto {
     private String userName;
 
     private Long commentCount; // 댓글 수
+    private Long visibleCommentCount;   // 삭제되지 않은 댓글 수 ✅
 
     private Long userId;
 

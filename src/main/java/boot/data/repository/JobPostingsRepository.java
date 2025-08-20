@@ -3,6 +3,7 @@ package boot.data.repository;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import boot.data.entity.JobPostingCategories;
@@ -29,7 +30,7 @@ public interface JobPostingsRepository extends JpaRepository<JobPostings, Long>{
             where l.jobPosting.id = :jobId
             order by l.isPrimary desc, l.id asc
         """)
-        List<JobPostingLocations> findByJobIdWithRegion(Long jobId);
+        List<JobPostingLocations> findByJobIdWithRegion(@Param("jobId") Long jobId);
         }
 
         public interface JobPostingCategoriesRepository extends JpaRepository<JobPostingCategories, Long> {
@@ -40,7 +41,7 @@ public interface JobPostingsRepository extends JpaRepository<JobPostings, Long>{
             where c.jobPosting.id = :jobId
             order by c.isPrimary desc, c.id asc
         """)
-        List<JobPostingCategories> findByJobIdWithCategory(Long jobId);
+        List<JobPostingCategories> findByJobIdWithCategory(@Param("jobId") Long jobId);
 }
 
 }
