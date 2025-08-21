@@ -99,8 +99,7 @@ public Long joinRoom(Long roomId) {
     // 방 멤버 목록 조회
     public List<MemberDto> getRoomMembers(Long roomId) {
     // 방 존재 여부 체크
-    GroupChatRooms room = roomsRepo.findById(roomId)
-            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+    
 
     // 멤버 목록 조회
     List<GroupChatMembers> members = membersRepo.findByRoom_Id(roomId);
@@ -120,8 +119,7 @@ public Long joinRoom(Long roomId) {
 public void leaveRoom(Long roomId) {
     Long uid = currentUser.idOrThrow();
 
-    GroupChatRooms room = roomsRepo.findById(roomId)
-            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+
 
     // 나가기 이전에 이름 확보
     String leaverName = userProfilesRepo.findByUserId(uid)

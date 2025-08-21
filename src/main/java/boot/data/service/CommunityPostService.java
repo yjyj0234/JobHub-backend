@@ -106,7 +106,7 @@ public class CommunityPostService {
 
         // 댓글 수 벌크 집계
         Map<Long, Long> commentCntMap = new HashMap<>();
-        for (Object[] row : commentsRepository.countByPostIdIn(postIds)) {
+        for (Object[] row : commentsRepository.countByPostId(postIds)) {
             Long postId = (Long) row[0];
             Long cnt = (Long) row[1];
             commentCntMap.put(postId, cnt);
@@ -172,6 +172,8 @@ public class CommunityPostService {
         if (p.getUser() == null || !Objects.equals(p.getUser().getId(), uid)) {
             throw new AccessDeniedException("작성자만 삭제 가능");
         }
+        // 댓글도 같이 삭제
+        commentsRepository.deleteByPost_Id(p.getId());
         postsRepository.delete(p);
     }
 
