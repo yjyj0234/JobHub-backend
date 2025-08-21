@@ -82,17 +82,15 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 // 2) 회사 전용(공고 등록 페이지/API)
                 .requestMatchers("/jobposting/**","/api/jobposting/**").hasAnyAuthority("COMPANY","ADMIN")
-
+                .requestMatchers("/error").permitAll()   
                 // 3) 이력서: 전부 USER만 접근 (GET 공개 원하면 아래 주석 참고)
                 // 프로필: 본인 조회/수정만 허용(컨트롤러 @PreAuthorize로 소유자 검사 권장)
                 .requestMatchers(HttpMethod.GET, "/api/profile/me").hasAuthority("COMPANY")
                 
                  // 이력서 *****순서 중요: 더 구체적인 permitAll이 먼저 와야 합니다.
-                .requestMatchers(HttpMethod.GET, "/api/resumes/public/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/resumes/**").hasAuthority("USER")
-                .requestMatchers(HttpMethod.POST, "/api/resumes/**").hasAuthority("USER")
-                .requestMatchers(HttpMethod.PUT,  "/api/resumes/**").hasAuthority("USER")
-                .requestMatchers(HttpMethod.DELETE,"/api/resumes/**").hasAuthority("USER")
+                 .requestMatchers(HttpMethod.GET, "/api/resumes/public/**").permitAll()
+                 .requestMatchers( "/api/resumes/**").hasAuthority("USER")
+               
                 // ※ 만약 GET만 공개하고 싶다면 위 한 줄을 지우고 아래 두 줄로 교체
                 // .requestMatchers(HttpMethod.GET, "/resumes/**").permitAll()
                 // .requestMatchers("/resumes", "/resumes/**").hasAuthority("USER")
