@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import boot.data.entity.JobPostingCategories;
 import boot.data.entity.JobPostingLocations;
 import boot.data.entity.JobPostings;
+import boot.data.type.PostingStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,5 +44,9 @@ public interface JobPostingsRepository extends JpaRepository<JobPostings, Long>{
         """)
         List<JobPostingCategories> findByJobIdWithCategory(@Param("jobId") Long jobId);
 }
+// 회사별 공고 목록 (모든 상태)
+List<JobPostings> findByCompanyIdOrderByCreatedAtDesc(Long companyId);
 
+// 회사와 상태로 조회
+List<JobPostings> findByCompanyIdAndStatusOrderByCreatedAtDesc(Long companyId, PostingStatus status);
 }
