@@ -31,7 +31,7 @@ public class GroupChatController {
     }
 
     // 내 방 목록
-    @GetMapping("/rooms")
+    @GetMapping("/rooms/my")
     public List<RoomResDto> myRooms() {
         return service.myRooms();
     }

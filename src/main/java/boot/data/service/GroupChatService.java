@@ -98,7 +98,7 @@ public Long joinRoom(Long roomId) {
 
     // 방 멤버 목록 조회
     public List<MemberDto> getRoomMembers(Long roomId) {
-    // 방 존재 여부 체크
+   
     
 
     // 멤버 목록 조회
