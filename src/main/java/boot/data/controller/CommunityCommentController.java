@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import boot.data.dto.CommunityCommentDto;
 import boot.data.security.CurrentUser;
 import boot.data.service.CommunityCommentService;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
