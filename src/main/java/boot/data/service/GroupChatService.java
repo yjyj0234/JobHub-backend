@@ -81,6 +81,8 @@ public Long joinRoom(Long roomId) {
                 .map(UserProfiles::getName)
                 .orElse("알 수 없음");
 
+                
+
         MessageDto dto = new MessageDto();
         dto.setId(null);
         dto.setSenderId(uid);

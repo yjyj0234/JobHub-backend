@@ -94,7 +94,7 @@ public class CommunityPostService {
         List<CommunityPosts> posts = postsRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
         if (posts.isEmpty()) return List.of();
 
-        Long curr = safeCurrentUserId();
+        Long curr = safeCurrentUserId(); // 현재 사용자 ID
 
         // 배치로 필요한 키 수집
         List<Long> postIds = posts.stream().map(CommunityPosts::getId).toList();
