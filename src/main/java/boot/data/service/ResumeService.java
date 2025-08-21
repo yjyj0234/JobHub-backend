@@ -7,6 +7,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.http.HttpStatus;
 
 import boot.data.dto.resume.ActivityRequest;
 import boot.data.dto.resume.ActivityResponse;
@@ -43,7 +46,7 @@ public class ResumeService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다"));
     
         if (dto.isPrimary()) {
-            resumeRepository.clearPrimaryStatus(userId);
+            resumeRepository.clearPrimaryStatus(userId); // 벌크 OK(단, updatedAt은 안 변함)
         }
     
         Resumes resume = new Resumes();
@@ -53,13 +56,9 @@ public class ResumeService {
         resume.setPublic(dto.isPublic());
     
         short rate = dto.getCompletionRate() == null ? 0 : dto.getCompletionRate();
-        resume.setCompletionRate(rate);
-        // ✅ 완성도 기준으로 상태 자동 결정
-        resume.setStatus(rate >= 100 ? "작성 완료" : "작성 중");
+        resume.updateCompletionRate(rate); // status는 콜백에서
     
-        resume.setCreatedAt(LocalDateTime.now());
-        resume.setUpdatedAt(LocalDateTime.now());
-    
+        // createdAt/updatedAt은 @PrePersist에서 처리해도 됨 (남겨둬도 무방)
         return resumeRepository.save(resume).getId();
     }
 
@@ -79,25 +78,24 @@ public class ResumeService {
 
     /** 이력서 수정(소유권 확인) */
     @Transactional
-public Long updateResume(Long resumeId, Long currentUserId, ResumeCreateDto dto) {
-    Resumes resume = getResumeById(resumeId, currentUserId);
-
-    if (dto.isPrimary() && !resume.isPrimary()) {
-        resumeRepository.clearPrimaryStatus(currentUserId);
+    public Long updateResume(Long resumeId, Long currentUserId, ResumeCreateDto dto) {
+        Resumes resume = getResumeById(resumeId, currentUserId);
+    
+        if (dto.isPrimary() && !resume.isPrimary()) {
+            resumeRepository.clearPrimaryStatus(currentUserId); // 벌크 OK
+        }
+    
+        resume.setTitle(dto.getTitle());
+        resume.setPrimary(dto.isPrimary());
+        resume.setPublic(dto.isPublic());
+    
+        if (dto.getCompletionRate() != null) {
+            resume.updateCompletionRate(dto.getCompletionRate()); // status는 콜백에서
+        }
+    
+        // updatedAt은 @PreUpdate에서 처리(직접 set하지 않아도 됨)
+        return resumeRepository.save(resume).getId();
     }
-
-    resume.setTitle(dto.getTitle());
-    resume.setPrimary(dto.isPrimary());
-    resume.setPublic(dto.isPublic());
-
-    // ✅ 업데이트 시에도 완성도 반영 + 상태 자동 결정
-    short rate = dto.getCompletionRate() == null ? resume.getCompletionRate() : dto.getCompletionRate();
-    resume.setCompletionRate(rate);
-    resume.setStatus(rate >= 100 ? "작성 완료" : "작성 중");
-
-    resume.setUpdatedAt(LocalDateTime.now());
-    return resumeRepository.save(resume).getId();
-}
 
     /** 이력서 삭제(소유권 확인) */
     @Transactional
@@ -161,49 +159,53 @@ public Long updateResume(Long resumeId, Long currentUserId, ResumeCreateDto dto)
 
     /** 활동 생성 (해당 이력서 + 본인 소유) */
     @Transactional
-    public ActivityResponse createActivity(Long resumeId, Long currentUserId, ActivityRequest req) {
-        Resumes resume = getOwnedResumeOrThrow(resumeId, currentUserId);
+public ActivityResponse createActivity(Long resumeId, Long currentUserId, ActivityRequest req) {
+    // 소유/존재 확인: 없으면 404
+    Resumes resume = resumeRepository.findByIdAndUserId(resumeId, currentUserId)
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND, "이력서를 찾을 수 없거나 권한이 없습니다."));
 
-        ResumeActivity entity = new ResumeActivity();
-        entity.setResume(resume);
-        entity.setActivityName(req.activityName());
-        entity.setOrganization(req.organization());
-        entity.setRole(req.role());
-        entity.setStartDate(req.startDate());
-        entity.setEndDate(req.endDate());
-        entity.setDescription(req.description());
+    ResumeActivity entity = new ResumeActivity();
+    entity.setResume(resume);
+    entity.setActivityName(req.activityName());
+    entity.setOrganization(req.organization());
+    entity.setRole(req.role());
+    entity.setStartDate(req.startDate());
+    entity.setEndDate(req.endDate());
+    entity.setDescription(req.description());
 
-        resume.updateModifiedTime();
-
-        return ActivityResponse.from(resumeActivityRepository.save(entity));
-    }
+    resume.updateModifiedTime();
+    entity = resumeActivityRepository.save(entity);
+    return ActivityResponse.from(entity);
+}
 
     /** 활동 수정 (본인 소유) */
     @Transactional
     public ActivityResponse updateActivity(Long activityId, Long currentUserId, ActivityRequest req) {
         ResumeActivity entity = resumeActivityRepository
-                .findByIdAndResume_User_Id(activityId, currentUserId)
-                .orElseThrow(() -> new IllegalArgumentException("활동을 찾을 수 없거나 권한이 없습니다."));
-
+            .findByIdAndResume_User_Id(activityId, currentUserId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "활동을 찾을 수 없거나 권한이 없습니다."));
+    
         entity.setActivityName(req.activityName());
         entity.setOrganization(req.organization());
         entity.setRole(req.role());
         entity.setStartDate(req.startDate());
         entity.setEndDate(req.endDate());
         entity.setDescription(req.description());
-
+    
         entity.getResume().updateModifiedTime();
-
-        return ActivityResponse.from(entity); // dirty checking
+        return ActivityResponse.from(entity);
     }
 
     /** 활동 삭제 (본인 소유) */
     @Transactional
     public void deleteActivity(Long activityId, Long currentUserId) {
         ResumeActivity entity = resumeActivityRepository
-                .findByIdAndResume_User_Id(activityId, currentUserId)
-                .orElseThrow(() -> new IllegalArgumentException("활동을 찾을 수 없거나 권한이 없습니다."));
-
+            .findByIdAndResume_User_Id(activityId, currentUserId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "활동을 찾을 수 없거나 권한이 없습니다."));
+    
         entity.getResume().updateModifiedTime();
         resumeActivityRepository.delete(entity);
     }
