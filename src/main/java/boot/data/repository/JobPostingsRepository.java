@@ -44,8 +44,12 @@ public interface JobPostingsRepository extends JpaRepository<JobPostings, Long>{
         """)
         List<JobPostingCategories> findByJobIdWithCategory(@Param("jobId") Long jobId);
 }
-// 회사별 공고 목록 (모든 상태)
-List<JobPostings> findByCompanyIdOrderByCreatedAtDesc(Long companyId);
+@Query("""
+        SELECT jp FROM JobPostings jp 
+        WHERE jp.company.id = :companyId 
+        ORDER BY jp.createdAt DESC
+    """)
+    List<JobPostings> findByCompanyIdOrderByCreatedAtDesc(@Param("companyId") Long companyId);
 
 // 회사와 상태로 조회
 List<JobPostings> findByCompanyIdAndStatusOrderByCreatedAtDesc(Long companyId, PostingStatus status);

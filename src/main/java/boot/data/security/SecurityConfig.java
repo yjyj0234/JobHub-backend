@@ -53,7 +53,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/auth/login", "/auth/register", "/auth/refresh",
                     "/public/**", "/docs/**", "/swagger-ui/**", "/v3/api-docs/**",
-                    "/ws/**", "/community/**", "/group-chat/**"
+                    "/ws/**", "/community/**", "/group-chat/**","/api/home/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET,
                     "/api/search/**",
