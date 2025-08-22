@@ -23,4 +23,5 @@ public class JobSearchResponseDto {
     private String closeType;
     private boolean isRemote;
     private LocalDateTime createdAt;
+    private String status; 
 }

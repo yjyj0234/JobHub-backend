@@ -12,5 +12,7 @@ public interface JobPostingCategoriesRepository extends JpaRepository<JobPosting
         where c.jobPosting.id = :jobId
         order by c.isPrimary desc, c.id asc
     """)
-    List<JobPostingCategories> findByJobIdWithCategory(@Param("jobId") Long jobId);
+    List<JobPostingCategories> findByJobIdWithCategory(@Param("jobId")Long jobId);
+    
+
 }

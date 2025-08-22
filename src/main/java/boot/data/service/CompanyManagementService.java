@@ -68,12 +68,12 @@ public class CompanyManagementService {
             // 기존 기업 수정시
             if (companiesRepository.existsByBusinessNumberExcludingId(
                     request.getBusinessNumber(), company.getId())) {
-                throw new IllegalArgumentException("이미 등록된 사업자등록번호입니다");  // 🔥 수정
+                throw new IllegalArgumentException("이미 등록된 사업자등록번호입니다");
             }
         } else {
             // 신규 등록시
             if (companiesRepository.existsByBusinessNumber(request.getBusinessNumber())) {
-                throw new IllegalArgumentException("이미 등록된 사업자등록번호입니다");  // 🔥 수정
+                throw new IllegalArgumentException("이미 등록된 사업자등록번호입니다");
             }
         }
         
@@ -84,14 +84,14 @@ public class CompanyManagementService {
         // 업종 설정
         if (request.getIndustryId() != null) {
             Industry industry = industryRepository.findById(request.getIndustryId())
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 업종입니다"));  // 🔥 수정
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 업종입니다")); 
             company.setIndustry(industry);
         }
         
         // 기업 규모 설정
         if (request.getCompanySizeId() != null) {
             CompanySize companySize = companySizeRepository.findById(request.getCompanySizeId())
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 기업 규모입니다"));  // 🔥 수정
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 기업 규모입니다")); 
             company.setCompanySize(companySize);
         }
         
@@ -151,11 +151,11 @@ public class CompanyManagementService {
         Long userId = currentUser.idOrThrow();
         
         Companies company = companiesRepository.findByOwnerId(userId)
-            .orElseThrow(() -> new IllegalArgumentException("삭제할 기업 정보가 없습니다"));  // 🔥 수정
+            .orElseThrow(() -> new IllegalArgumentException("삭제할 기업 정보가 없습니다"));  
         
         // 채용공고가 있는 경우 삭제 불가
         if (company.getActiveJobCount() != null && company.getActiveJobCount() > 0) {
-            throw new IllegalStateException("진행중인 채용공고가 있어 기업 정보를 삭제할 수 없습니다");  // 🔥 수정
+            throw new IllegalStateException("진행중인 채용공고가 있어 기업 정보를 삭제할 수 없습니다");  
         }
         
         companiesRepository.delete(company);
