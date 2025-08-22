@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -119,6 +120,17 @@ public class JobSearchService {
         result.getContent().forEach(this::checkAndUpdateExpiredStatus);
         
         log.info("검색 결과: {} 건", result.getTotalElements());
+
+        List<JobPostings> filteredList = result.getContent().stream()
+        .filter(posting -> posting.getStatus() != PostingStatus.DRAFT)
+        .collect(Collectors.toList());
+    
+        Page<JobPostings> filteredResult = new PageImpl<>(
+        filteredList, 
+        result.getPageable(), 
+        filteredList.size()
+    );
+    
         return result.map(this::convertToDto);
     }
     @Transactional
