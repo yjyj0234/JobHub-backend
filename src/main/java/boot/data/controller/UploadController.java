@@ -76,7 +76,7 @@ public Map<String, Object> uploadOne(@RequestParam("file") MultipartFile file,
             @RequestParam String key,
             @RequestParam(name = "minutes", defaultValue = "30") long minutes
     ) {
-        // TODO: 로그인/권한/소유권 검사(필요 시)
+        
         String url = storage.presignGetUrl(key, Duration.ofMinutes(minutes));
         return Map.of("key", key, "url", url, "expiresInSec", minutes * 60);
     }
