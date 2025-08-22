@@ -45,14 +45,12 @@ public interface JobPostingsRepository extends JpaRepository<JobPostings, Long>{
         """)
         List<JobPostingCategories> findByJobIdWithCategory(@Param("jobId") Long jobId);
 }
-<<<<<<< HEAD
 @Query("""
         SELECT jp FROM JobPostings jp 
         WHERE jp.company.id = :companyId 
         ORDER BY jp.createdAt DESC
     """)
     List<JobPostings> findByCompanyIdOrderByCreatedAtDesc(@Param("companyId") Long companyId);
-=======
 //지원자수 증가
       @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update JobPostings jp set jp.applicationCount = jp.applicationCount + 1 where jp.id = :jobId")
@@ -62,7 +60,6 @@ public interface JobPostingsRepository extends JpaRepository<JobPostings, Long>{
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update JobPostings jp set jp.applicationCount = case when jp.applicationCount > 0 then jp.applicationCount - 1 else 0 end where jp.id = :jobId")
     int decrementApplicationCount(@Param("jobId") Long jobId);
->>>>>>> fcf3963ea7da23926268547cc87234d8077619f9
 
 // 회사와 상태로 조회
 List<JobPostings> findByCompanyIdAndStatusOrderByCreatedAtDesc(Long companyId, PostingStatus status);
