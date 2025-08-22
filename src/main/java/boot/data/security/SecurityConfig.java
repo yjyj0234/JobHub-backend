@@ -67,14 +67,15 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/search/**","/api/uploads/**").permitAll()
 
-                
+                 .requestMatchers("/api/service/**").permitAll()
+
                 // 2) 회사 전용(공고 등록 페이지/API)회사전용 페이지
                 .requestMatchers("/api/company/profile", "/api/company/profile/**").hasAnyAuthority("COMPANY","ADMIN")
                 .requestMatchers("/jobposting", "/jobposting/**").hasAnyAuthority("COMPANY","ADMIN")
 
                // company만 입장
                 .requestMatchers(HttpMethod.POST, "/api/postings/**").hasAuthority("COMPANY")
-                .requestMatchers(HttpMethod.PUT,  "/api/postings/**").hasAuthority("COMPANY")
+                .requestMatchers(HttpMethod.PUT,  "/api/postings/**").hasAuthority("COMPANY")   
                 .requestMatchers(HttpMethod.DELETE,"/api/postings/**").hasAuthority("COMPANY")
 
 
