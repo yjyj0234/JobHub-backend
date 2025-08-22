@@ -4,6 +4,8 @@ package boot.data.service;
 import boot.data.dto.*;
 import boot.data.entity.*;
 import boot.data.repository.*;
+import boot.data.type.CloseType;
+import boot.data.type.PostingStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -13,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -111,11 +114,27 @@ public class JobSearchService {
             result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
             updateSearchKeyword(keyword);
         }
+
+        // 마감일이 지난 공고 상태 업데이트
+        result.getContent().forEach(this::checkAndUpdateExpiredStatus);
         
         log.info("검색 결과: {} 건", result.getTotalElements());
         return result.map(this::convertToDto);
     }
-    
+    @Transactional
+    private void checkAndUpdateExpiredStatus(JobPostings posting) {
+    // OPEN 상태이고, DEADLINE 타입이며, 마감일이 지난 경우
+    if (posting.getStatus() == PostingStatus.OPEN 
+        && posting.getCloseType() == CloseType.DEADLINE
+        && posting.getCloseDate() != null
+        && posting.getCloseDate().isBefore(LocalDateTime.now())) {
+        
+        posting.setStatus(PostingStatus.EXPIRED);
+        // Repository 주입이 필요하면 상단에 추가
+        // jobPostingsRepository.save(posting);
+        log.debug("공고 ID {} 상태를 EXPIRED로 변경", posting.getId());
+    }
+}
     /**
      * Entity를 DTO로 변환
      * 필요한 정보만 선택적으로 포함
@@ -163,6 +182,7 @@ public class JobSearchService {
             .applicationCount(entity.getApplicationCount() != null ? entity.getApplicationCount() : 0)
             .closeDate(entity.getCloseDate())
             .closeType(entity.getCloseType() != null ? entity.getCloseType().name() : "")
+            .status(entity.getStatus() != null ? entity.getStatus().name() : "OPEN")
             .isRemote(entity.isRemote())
             .createdAt(entity.getCreatedAt())
             .build();
