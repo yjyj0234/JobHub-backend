@@ -228,3 +228,4 @@ gradle-app.setting
 bin/main/application-secret.yml
 src/main/resources/application-secret.yml
 .settings/org.eclipse.buildship.core.prefs
+.settings/org.eclipse.buildship.core.prefs
