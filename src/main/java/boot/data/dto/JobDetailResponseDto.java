@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -29,9 +30,16 @@ public class JobDetailResponseDto {
     private Long id;
     private String title;
     private String companyName;
+    
+    // 🔥 회사 소유자 ID 추가
+    private Long companyOwnerId;
 
     /** DEADLINE / UNTIL_FILLED / CONTINUOUS / PERIODIC */
     private String closeType;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime openDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime closeDate;
 
     private Integer viewCount;
@@ -157,7 +165,11 @@ public class JobDetailResponseDto {
                 .id(j.getId())
                 .title(j.getTitle())
                 .companyName(j.getCompany() != null ? j.getCompany().getName() : null)
+                // 🔥 회사 소유자 ID 추가 - Companies 엔티티의 owner.id 사용
+                .companyOwnerId(j.getCompany() != null && j.getCompany().getOwner() != null ? 
+                    j.getCompany().getOwner().getId() : null)
                 .closeType(j.getCloseType() != null ? j.getCloseType().name() : null)
+                .openDate(j.getOpenDate())
                 .closeDate(j.getCloseDate())
                 .viewCount(j.getViewCount())
                 .applicationCount(j.getApplicationCount())
@@ -203,7 +215,11 @@ public class JobDetailResponseDto {
                 .id(j.getId())
                 .title(j.getTitle())
                 .companyName(j.getCompany() != null ? j.getCompany().getName() : null)
+                // 🔥 회사 소유자 ID 추가 - Companies 엔티티의 owner.id 사용
+                .companyOwnerId(j.getCompany() != null && j.getCompany().getOwner() != null ? 
+                    j.getCompany().getOwner().getId() : null)
                 .closeType(j.getCloseType() != null ? j.getCloseType().name() : null)
+                .openDate(j.getOpenDate())
                 .closeDate(j.getCloseDate())
                 .viewCount(j.getViewCount())
                 .applicationCount(j.getApplicationCount())

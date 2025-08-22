@@ -19,6 +19,7 @@ import boot.data.repository.JobPostingsRepository;
 import boot.data.repository.JobPostingLocationRepository;
 import boot.data.repository.JobPostingCategoriesRepository;
 import boot.data.security.CurrentUser;
+import boot.data.type.CloseType;
 import boot.data.type.PostingStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,9 +49,13 @@ public class CompanyPostingService {
         // 회사의 모든 공고 조회
         List<JobPostings> postings = jobPostingsRepository.findByCompanyIdOrderByCreatedAtDesc(myCompany.getId());
         
-        return postings.stream()
-            .map(this::toListDto)
-            .collect(Collectors.toList());
+         for (JobPostings posting : postings) {
+        checkAndUpdateExpiredStatus(posting);
+    }
+    
+    return postings.stream()
+        .map(this::toListDto)
+        .collect(Collectors.toList());
     }
 
     /**
@@ -216,6 +221,20 @@ public class CompanyPostingService {
         // ... 나머지 필드 매핑
         return dto;
     }
+
+    @Transactional
+private void checkAndUpdateExpiredStatus(JobPostings posting) {
+    // OPEN 상태이고, DEADLINE 타입이며, 마감일이 지난 경우
+    if (posting.getStatus() == PostingStatus.OPEN 
+        && posting.getCloseType() == CloseType.DEADLINE
+        && posting.getCloseDate() != null
+        && posting.getCloseDate().isBefore(LocalDateTime.now())) {
+        
+        posting.setStatus(PostingStatus.EXPIRED);
+        jobPostingsRepository.save(posting);
+        log.info("공고 ID {} 상태를 EXPIRED로 변경", posting.getId());
+    }
+}
 
     
 }
