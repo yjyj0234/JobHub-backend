@@ -15,4 +15,5 @@ public interface GroupChatMembersRepository extends JpaRepository<GroupChatMembe
     
      @Modifying @Transactional
     void deleteByRoom_Id(Long roomId);
+    
 }

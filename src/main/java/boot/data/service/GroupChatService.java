@@ -303,4 +303,9 @@ public void deleteRoom(Long roomId, Principal principal) {
     private Long tryCurrentUserId() {
         try { return currentUser.idOrThrow(); } catch (Exception e) { return null; }
     }
+
+   
+    
+
+    
 }

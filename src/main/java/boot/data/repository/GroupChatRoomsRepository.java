@@ -12,8 +12,11 @@ public interface GroupChatRoomsRepository extends JpaRepository<GroupChatRooms, 
     @Query("""
       select r from GroupChatRooms r
       where exists (select m.id from GroupChatMembers m
-                    where m.room.id = r.id and m.user.Id = :uid)
+                    where m.room.id = r.id and m.user.id = :uid)
       order by r.id desc
     """)
     List<GroupChatRooms> findMyRooms(@Param("uid") Long uid);
+
+    
+    
 }
