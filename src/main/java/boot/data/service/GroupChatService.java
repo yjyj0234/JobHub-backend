@@ -13,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import boot.data.dto.*;
+import boot.data.dto.invitechat.InviteCreateDto;
+import boot.data.dto.invitechat.InviteResDto;
 import boot.data.entity.*;
 import boot.data.repository.*;
 
@@ -263,6 +265,234 @@ public void deleteRoom(Long roomId, Principal principal) {
         roomsRepo.delete(room);
     messagingTemplate.convertAndSend("/topic/rooms", exploreRooms());
 }
+
+// 1대1 면접제안 채팅방
+
+// 초대 생성
+@Transactional
+public InviteResDto inviteUser(InviteCreateDto req) {
+    if (!"COMPANY".equals(currentUser.roleOrNull())) {
+        throw new IllegalStateException("면접 초대는 COMPANY만 가능합니다.");
+    }
+
+    Long inviterId = currentUser.idOrThrow();
+    Users inviter = usersRepo.findById(inviterId)
+            .orElseThrow(() -> new IllegalArgumentException("초대한 사용자 없음: " + inviterId));
+
+    Users invitee = usersRepo.findById(req.getTargetUserId())
+            .orElseThrow(() -> new IllegalArgumentException("초대 대상 없음: " + req.getTargetUserId()));
+
+    // 대상은 USER만
+    if (invitee.getUserType() == null || invitee.getUserType() != boot.data.type.UserType.USER) {
+        throw new IllegalArgumentException("대상은 USER 유형만 가능합니다.");
+    }
+
+    // 이미 수락된 1:1 방이 있으면 중복 방지
+    if (roomsRepo.findOneToOne(inviterId, invitee.getId()).isPresent()) {
+        throw new IllegalStateException("이미 1:1 채팅방이 존재합니다.");
+    }
+
+    // 이미 대기중 초대가 있으면 중복 방지
+    if (roomsRepo.findPendingInvite(inviterId, invitee.getId()).isPresent()) {
+        throw new IllegalStateException("이미 대기 중인 초대가 있습니다.");
+    }
+
+    // 방 생성 (회사만 멤버)
+    GroupChatRooms room = GroupChatRooms.builder()
+            .roomName("INVITE:" + inviterId + ":" + invitee.getId())
+            .createdBy(inviter)
+            .build();
+    roomsRepo.save(room);
+
+    membersRepo.save(GroupChatMembers.builder()
+            .room(room)
+            .user(inviter)     // 회사만 먼저 입장
+            .build());
+
+    // 선택: 초대 메시지(시스템 느낌)
+    String msg = (req.getMessage() == null || req.getMessage().isBlank())
+            ? "면접 초대가 도착했습니다."
+            : "[면접초대] " + req.getMessage();
+
+    messagesRepo.save(GroupChatMessages.builder()
+            .room(room)
+            .sender(inviter)
+            .message(msg)
+            .build());
+
+    // 초대 알림(구독 채널 예시)
+    try {
+        MessageDto notice = new MessageDto();
+        notice.setSystem(true);
+        notice.setType("INVITE");
+        notice.setRoomId(room.getId());
+        notice.setSenderId(inviterId);
+        notice.setMessage("면접 초대가 도착했습니다.");
+        notice.setSentAt(java.time.LocalDateTime.now());
+        messagingTemplate.convertAndSend("/topic/invites/" + invitee.getId(), notice);
+    } catch (Exception ignore) {}
+
+    return InviteResDto.builder()
+            .roomId(room.getId())
+            .inviterId(inviterId)
+            .inviteeId(invitee.getId())
+            .status("PENDING")
+            .createdAt(room.getCreatedAt())
+            .respondedAt(null)
+            .build();
+}
+
+//초대 수락
+@Transactional
+public InviteResDto acceptInvite(Long roomId) {
+    Long meId = currentUser.idOrThrow();
+
+    GroupChatRooms room = roomsRepo.findById(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+
+    long[] pair = parseInviteRoomName(room.getRoomName()); // [inviterId, inviteeId]
+    Long inviterId = pair[0];
+    Long inviteeId = pair[1];
+
+    if (!inviteeId.equals(meId)) {
+        throw new IllegalStateException("본인에게 온 초대가 아닙니다.");
+    }
+    if (room.getCreatedBy().getUserType() != boot.data.type.UserType.COMPANY) {
+        throw new IllegalStateException("유효하지 않은 초대 방입니다.");
+    }
+    if (membersRepo.existsByRoom_IdAndUser_Id(roomId, meId)) {
+        // 이미 수락됨
+        return InviteResDto.builder()
+                .roomId(room.getId())
+                .inviterId(inviterId)
+                .inviteeId(inviteeId)
+                .status("ACCEPTED")
+                .createdAt(room.getCreatedAt())
+                .respondedAt(java.time.LocalDateTime.now())
+                .build();
+    }
+    // 대기중: 멤버 1명(회사)만 있어야 정상
+    if (membersRepo.countByRoom_Id(roomId) != 1) {
+        throw new IllegalStateException("초대 대기 상태가 아닙니다.");
+    }
+
+    // 멤버 추가 (USER)
+    membersRepo.save(GroupChatMembers.builder()
+            .room(room)
+            .user(usersRepo.getReferenceById(meId))
+            .build());
+
+    // 방 이름 변경(선택)
+    long a = Math.min(inviterId, inviteeId);
+    long b = Math.max(inviterId, inviteeId);
+    room.setRoomName("DM:" + a + ":" + b);
+    roomsRepo.save(room);
+
+    // 시스템 메시지
+    MessageDto dto = new MessageDto();
+    dto.setSystem(true);
+    dto.setType("INVITE_ACCEPTED");
+    dto.setRoomId(room.getId());
+    dto.setSenderId(meId);
+    dto.setMessage("초대를 수락했습니다. 대화를 시작할 수 있어요.");
+    dto.setSentAt(java.time.LocalDateTime.now());
+    messagingTemplate.convertAndSend("/topic/rooms/" + room.getId(), dto);
+
+    return InviteResDto.builder()
+            .roomId(room.getId())
+            .inviterId(inviterId)
+            .inviteeId(inviteeId)
+            .status("ACCEPTED")
+            .createdAt(room.getCreatedAt())
+            .respondedAt(java.time.LocalDateTime.now())
+            .build();
+}
+
+//초대 거절
+@Transactional
+public InviteResDto declineInvite(Long roomId) {
+    Long meId = currentUser.idOrThrow();
+
+    GroupChatRooms room = roomsRepo.findById(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+
+    long[] pair = parseInviteRoomName(room.getRoomName());
+    Long inviterId = pair[0];
+    Long inviteeId = pair[1];
+
+    if (!inviteeId.equals(meId)) {
+        throw new IllegalStateException("본인에게 온 초대가 아닙니다.");
+    }
+    if (room.getCreatedBy().getUserType() != boot.data.type.UserType.COMPANY) {
+        throw new IllegalStateException("유효하지 않은 초대 방입니다.");
+    }
+    // 아직 수락 전이어야 함
+    if (membersRepo.countByRoom_Id(roomId) != 1) {
+        throw new IllegalStateException("초대 대기 상태가 아닙니다.");
+    }
+
+    // 방/메시지 정리
+    messagesRepo.deleteByRoom_Id(roomId);
+    membersRepo.deleteByRoom_Id(roomId);
+    roomsRepo.delete(room);
+
+    // (선택) 초대한 회사에게 거절 알림
+    try {
+        MessageDto notice = new MessageDto();
+        notice.setSystem(true);
+        notice.setType("INVITE_DECLINED");
+        notice.setRoomId(roomId);
+        notice.setSenderId(meId);
+        notice.setMessage("초대가 거절되었습니다.");
+        notice.setSentAt(java.time.LocalDateTime.now());
+        messagingTemplate.convertAndSend("/topic/invites/" + inviterId, notice);
+    } catch (Exception ignore) {}
+
+    return InviteResDto.builder()
+            .roomId(roomId)
+            .inviterId(inviterId)
+            .inviteeId(inviteeId)
+            .status("DECLINED")
+            .createdAt(room.getCreatedAt())
+            .respondedAt(java.time.LocalDateTime.now())
+            .build();
+}
+
+//내가 받은 대기중 초대 목록
+public List<InviteResDto> myPendingInvites() {
+    Long meId = currentUser.idOrThrow();
+    return roomsRepo.findPendingInvitesForUser(meId).stream()
+            .map(r -> {
+                long[] p = parseInviteRoomName(r.getRoomName());
+                return InviteResDto.builder()
+                        .roomId(r.getId())
+                        .inviterId(p[0])
+                        .inviteeId(p[1])
+                        .status("PENDING")
+                        .createdAt(r.getCreatedAt())
+                        .respondedAt(null)
+                        .build();
+            })
+            .toList();
+}
+
+
+//1대1 채팅방 헬퍼
+private long[] parseInviteRoomName(String roomName) {
+    if (roomName == null || !roomName.startsWith("INVITE:"))
+        throw new IllegalStateException("초대 방이 아닙니다.");
+    String[] parts = roomName.split(":");
+    if (parts.length != 3)
+        throw new IllegalStateException("잘못된 초대 방 이름 형식입니다.");
+    try {
+        long inviterId = Long.parseLong(parts[1]);
+        long inviteeId = Long.parseLong(parts[2]);
+        return new long[]{inviterId, inviteeId};
+    } catch (NumberFormatException e) {
+        throw new IllegalStateException("초대 방 파싱 실패: " + roomName);
+    }
+}
+
 
     /* ===== Helper ===== */
 
