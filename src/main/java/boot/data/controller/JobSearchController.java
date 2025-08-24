@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 @Slf4j
@@ -27,12 +25,28 @@ public class JobSearchController {
     /**
      * 채용공고 검색
      */
-    @PostMapping("/jobs")
-    public ResponseEntity<Page<JobSearchResponseDto>> searchJobs(
-        @RequestBody JobSearchRequestDto request) {
-        log.info("검색 요청: {}", request);
-        return ResponseEntity.ok(jobSearchService.search(request));
+@PostMapping("/jobs")
+public ResponseEntity<Page<JobSearchResponseDto>> searchJobs(
+    @RequestBody JobSearchRequestDto request) {
+    try {
+        log.info("=== 검색 API 호출 ===");
+        log.info("Raw Request: {}", request);
+        
+        // 각 필드 명시적 로깅
+        log.info("keyword: {}", request.getKeyword());
+        log.info("page: {}", request.getPage());
+        log.info("size: {}", request.getSize());
+        log.info("sortBy: {}", request.getSortBy());
+        
+        Page<JobSearchResponseDto> result = jobSearchService.search(request);
+        log.info("검색 결과: {} 건", result.getTotalElements());
+        
+        return ResponseEntity.ok(result);
+    } catch (Exception e) {
+        log.error("검색 중 오류 발생", e);
+        throw e;
     }
+}
     
     /**
      * 지역 카테고리 조회
