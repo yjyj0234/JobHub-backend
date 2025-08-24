@@ -67,4 +67,5 @@ public class HomeController {
                 "message", isLiked ? "좋아요가 추가되었습니다" : "좋아요가 제거되었습니다"
         ));
     }
+    
 }
