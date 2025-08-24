@@ -76,4 +76,7 @@ public interface ResumeRepository extends JpaRepository<Resumes, Long> {
     @Query("SELECT COUNT(r) FROM Resumes r WHERE r.user.id = :userId")
     Long countByUserId(@Param("userId") Long userId);
 
+
+    
+
 }
