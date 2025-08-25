@@ -30,7 +30,8 @@ public class JobDetailResponseDto {
     private Long id;
     private String title;
     private String companyName;
-    
+
+    private Long companyId;
     // 🔥 회사 소유자 ID 추가
     private Long companyOwnerId;
 
@@ -165,6 +166,7 @@ public class JobDetailResponseDto {
                 .id(j.getId())
                 .title(j.getTitle())
                 .companyName(j.getCompany() != null ? j.getCompany().getName() : null)
+                .companyId(j.getCompany() != null ? j.getCompany().getId() : null)
                 // 🔥 회사 소유자 ID 추가 - Companies 엔티티의 owner.id 사용
                 .companyOwnerId(j.getCompany() != null && j.getCompany().getOwner() != null ? 
                     j.getCompany().getOwner().getId() : null)

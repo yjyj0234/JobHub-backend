@@ -1,5 +1,8 @@
 package boot.data.repository;
 
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,6 +15,7 @@ import boot.data.entity.JobPostingLocations;
 import boot.data.entity.JobPostings;
 import boot.data.type.PostingStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,4 +67,52 @@ public interface JobPostingsRepository extends JpaRepository<JobPostings, Long>{
 
 // 회사와 상태로 조회
 List<JobPostings> findByCompanyIdAndStatusOrderByCreatedAtDesc(Long companyId, PostingStatus status);
+
+// 마감일이 지난 OPEN 상태 공고 조회
+    @Query("""
+        SELECT jp FROM JobPostings jp 
+        WHERE jp.status = 'OPEN' 
+        AND jp.closeType = 'DEADLINE'
+        AND jp.closeDate IS NOT NULL 
+        AND jp.closeDate < :now
+    """)
+    List<JobPostings> findExpiredOpenPostings(@Param("now") LocalDateTime now);
+    
+    // 한번에 업데이트 (성능 최적화)
+    @Modifying
+    @Query("""
+        UPDATE JobPostings jp 
+        SET jp.status = 'EXPIRED' 
+        WHERE jp.status = 'OPEN' 
+        AND jp.closeType = 'DEADLINE'
+        AND jp.closeDate IS NOT NULL 
+        AND jp.closeDate < :now
+    """)
+    int updateExpiredPostings(@Param("now") LocalDateTime now);
+    
+    // 진행중인 공고만 조회 (DRAFT, CLOSED, EXPIRED 제외)
+    @Query("""
+        SELECT jp FROM JobPostings jp 
+        WHERE jp.status = 'OPEN'
+        AND (jp.closeType != 'DEADLINE' 
+             OR jp.closeDate IS NULL 
+             OR jp.closeDate >= :now)
+        ORDER BY jp.createdAt DESC
+    """)
+    Page<JobPostings> findActivePostings(@Param("now") LocalDateTime now, Pageable pageable);
+
+    List<JobPostings> findByStatusOrderByCreatedAtDesc(
+        PostingStatus status,
+        Pageable pageable
+    );
+
+    // ✅ 회사별 진행중(OPEN) 공고 수
+long countByCompanyIdAndStatus(Long companyId, PostingStatus status);
+
+// ✅ 회사별 최근 OPEN 공고 Top 6
+List<JobPostings> findTop6ByCompanyIdAndStatusOrderByCreatedAtDesc(
+        Long companyId, PostingStatus status
+);
+
+
 }

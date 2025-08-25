@@ -1,5 +1,6 @@
 package boot.data.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,4 +78,21 @@ public interface JobPostingSearchRepository extends JpaRepository<JobPostings,Lo
     default List<Object[]> findTopCompaniesByViewCount() {
         return findTopCompaniesByViewCount(PageRequest.of(0, 10));
     }
+
+    @Query("""
+    SELECT DISTINCT jp FROM JobPostings jp
+    LEFT JOIN jp.jobPostingLocations jpl
+    LEFT JOIN jp.jobPostingCategories jpc
+    WHERE jp.status = 'OPEN'
+    AND (jp.closeType != 'DEADLINE' 
+         OR jp.closeDate IS NULL 
+         OR jp.closeDate >= :now)
+    AND (:keyword IS NULL OR jp.searchText LIKE %:keyword%)
+    ORDER BY jp.createdAt DESC
+""")
+Page<JobPostings> searchActivePostings(
+    @Param("keyword") String keyword,
+    @Param("now") LocalDateTime now,
+    Pageable pageable
+);
 }
