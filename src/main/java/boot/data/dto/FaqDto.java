@@ -1,27 +1,20 @@
 package boot.data.dto;
 
-import boot.data.entity.Faqs;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import java.sql.Timestamp;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class FaqDto {
     private Long id;
     private String category;
     private String question;
     private String answer;
-
-    public static FaqDto toDto(Faqs faq) {
-        return FaqDto.builder()
-                .id(faq.getId())
-                .category(faq.getCategory())
-                .question(faq.getQuestion())
-                .answer(faq.getAnswer())
-                .build();
-    }
+    private Timestamp createdAt;
+    private Timestamp updatedAt;
 }
