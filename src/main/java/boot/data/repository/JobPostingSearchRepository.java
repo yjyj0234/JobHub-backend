@@ -25,9 +25,8 @@ public interface JobPostingSearchRepository extends JpaRepository<JobPostings,Lo
     Optional<JobPostings> findByIdWithDetails(@Param("id") Long id);
 
     //키워드 검색(제목,회사명,통합검색필드) , 대소문자 구분없이 검색 가능
-    @Query("SELECT jp FROM JobPostings jp JOIN jp.company c WHERE jp.status = 'OPEN' AND (LOWER(jp.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(jp.searchText) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    @Query("SELECT DISTINCT jp FROM JobPostings jp WHERE jp.status = 'OPEN' AND (jp.title LIKE %:keyword% OR jp.company.name LIKE %:keyword%)")
     Page<JobPostings> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
-
     //복합검색 (지역+직무 카테고리)
     //EXISTS 사용으로 중복 제거
     @Query("SELECT DISTINCT jp FROM JobPostings jp WHERE jp.status = 'OPEN' AND (:regionIds IS NULL OR EXISTS (SELECT 1 FROM JobPostingLocations jpl WHERE jpl.jobPosting = jp AND jpl.region.id IN :regionIds)) AND (:categoryIds IS NULL OR EXISTS (SELECT 1 FROM JobPostingCategories jpc WHERE jpc.jobPosting = jp AND jpc.jobCategory.id IN :categoryIds))")
