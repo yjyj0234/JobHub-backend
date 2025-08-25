@@ -1,10 +1,16 @@
 package boot.data.dto;
 
 import boot.data.entity.JobPostings;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor 
+@Builder
 public class CompanyJobDto {
     private Long id;
     private String title;

@@ -1,10 +1,17 @@
 package boot.data.dto;
 
-import lombok.*;
+
 import java.util.List;
 
-@Getter @Setter @Builder
-@AllArgsConstructor @NoArgsConstructor
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data 
+@Builder
+@AllArgsConstructor 
+@NoArgsConstructor
 public class CompanyProfileResponse {
     private CompanyProfileDto profile;
 
@@ -15,13 +22,3 @@ public class CompanyProfileResponse {
     private List<CompanyJobDto> recentOpenJobs; // 최근 OPEN 공고 6개
 }
 
-@Getter @Setter @Builder
-@AllArgsConstructor @NoArgsConstructor
-class CompanyJobDto {
-    private Long id;
-    private String title;
-    private String status;     // OPEN/CLOSED...
-    private String closeType;  // DEADLINE/CONTINUOUS...
-    private String closeDate;  // ISO string
-    private Integer viewCount;
-}
