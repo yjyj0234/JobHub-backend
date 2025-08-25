@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import boot.data.dto.RoomResDto;
 import boot.data.dto.invitechat.InviteActionDto;
 import boot.data.dto.invitechat.InviteCreateDto;
 import boot.data.dto.invitechat.InviteResDto;
@@ -42,5 +43,10 @@ public class ChatInviteController {
     @GetMapping("/me/pending") // USER가 받은 대기중 초대 목록
     public List<InviteResDto> myPending() {
         return chatService.myPendingInvites();
+    }
+
+     @GetMapping("/my") // USER의 면접제안 채팅방 목록
+    public List<RoomResDto> myInterviewRooms() {
+        return chatService.myInterviewRooms();
     }
 }

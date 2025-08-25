@@ -4,6 +4,7 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -33,6 +34,8 @@ public class GroupChatService {
     private final UserProfilesRepository userProfilesRepo; // senderName 조회용
     private final CurrentUser currentUser;
     private final SimpMessagingTemplate messagingTemplate;
+    private static final Pattern INVITE_PATTERN = Pattern.compile("^INVITE:\\d+:\\d+$");
+    private static final Pattern DM_PATTERN     = Pattern.compile("^DM:\\d+:\\d+$");
 
     /* 방 생성 */
     @Transactional
@@ -153,6 +156,7 @@ public void leaveRoom(Long roomId) {
     public List<RoomResDto> myRooms() {
         Long uid = currentUser.idOrThrow();
         return roomsRepo.findMyRooms(uid).stream()
+                .filter(r -> !isInterviewRoom(r)) // 면접 전용 방 제외
                 .map(this::toRoomRes)
                 .toList();
     }
@@ -243,10 +247,12 @@ public MessageDto sendMessage(Long roomId, String message, Long senderId) {
     return dto;
 }
 
+//방 탐색 (전체 공개 방)
 public List<RoomResDto> exploreRooms() {
     // 전체 방 최신순
     return roomsRepo.findAll(Sort.by(Sort.Direction.DESC, "id"))
             .stream()
+            .filter(r -> !isInterviewRoom(r)) // 면접 전용 방 제외
             .map(this::toRoomRes)
             .toList();
 }
@@ -312,7 +318,7 @@ public InviteResDto inviteUser(InviteCreateDto req) {
     // 선택: 초대 메시지(시스템 느낌)
     String msg = (req.getMessage() == null || req.getMessage().isBlank())
             ? "면접 초대가 도착했습니다."
-            : "[면접초대] " + req.getMessage();
+            : "[면접제안] " + req.getMessage();
 
     messagesRepo.save(GroupChatMessages.builder()
             .room(room)
@@ -476,6 +482,56 @@ public List<InviteResDto> myPendingInvites() {
             .toList();
 }
 
+
+/** 회사-개인 1:1 면접 전용 방 목록 (내가 속한 것만) */
+@Transactional(readOnly = true)
+public List<RoomResDto> myInterviewRooms() {
+    Long uid = currentUser.idOrThrow();
+
+    // 내가 멤버인 방들 → 면접 전용 규칙으로 필터
+    var interviewRooms = roomsRepo.findMyRooms(uid).stream()
+            .filter(this::isInterviewRoom) // 아래 헬퍼로 판별
+            .map(this::toRoomRes)
+            // 최신 활동순(마지막 메시지 시각 없으면 생성 시각)
+            .sorted((a, b) -> {
+                var at = a.getLastSentAt() != null ? a.getLastSentAt() : a.getCreatedAt();
+                var bt = b.getLastSentAt() != null ? b.getLastSentAt() : b.getCreatedAt();
+                return bt.compareTo(at);
+            })
+            .toList();
+
+    return interviewRooms;
+}
+
+/** 면접 전용 방 판별:
+ *  - INVITE: createdBy 가 COMPANY
+ *  - DM: 멤버에 COMPANY 1명 + USER 1명
+ */
+private boolean isInterviewRoom(GroupChatRooms room) {
+    String name = room.getRoomName();
+    if (name == null) return false;
+
+     name = name.strip(); // 앞뒤 공백 방어 (Java 11+)
+
+    // INVITE:<inviterId>:<inviteeId>  또는  DM:<a>:<b> 형식이면 면접방으로 간주
+    return INVITE_PATTERN.matcher(name).matches()
+        || DM_PATTERN.matcher(name).matches();
+
+    // // 수락된 1:1 DM 방: DM:<a>:<b>
+    // if (name.startsWith("DM:")) {
+    //     // 멤버 조회해서 COMPANY/USER 한 명씩 있는지 확인
+    //     var members = membersRepo.findByRoom_Id(room.getId());
+    //     boolean hasCompany = members.stream()
+    //             .anyMatch(m -> m.getUser() != null
+    //                     && m.getUser().getUserType() == boot.data.type.UserType.COMPANY);
+    //     boolean hasUser = members.stream()
+    //             .anyMatch(m -> m.getUser() != null
+    //                     && m.getUser().getUserType() == boot.data.type.UserType.USER);
+    //     return hasCompany && hasUser;
+    // }
+
+    // return false;
+}
 
 //1대1 채팅방 헬퍼
 private long[] parseInviteRoomName(String roomName) {
