@@ -34,8 +34,9 @@ public class GroupChatService {
     private final UserProfilesRepository userProfilesRepo; // senderName 조회용
     private final CurrentUser currentUser;
     private final SimpMessagingTemplate messagingTemplate;
-    private static final Pattern INVITE_PATTERN = Pattern.compile("^INVITE:\\d+:\\d+$");
-    private static final Pattern DM_PATTERN     = Pattern.compile("^DM:\\d+:\\d+$");
+    private static final Pattern INVITE_PATTERN = Pattern.compile("^INVITE:\\d+:\\d+$"); // INVITE 패턴
+    private static final Pattern DM_PATTERN     = Pattern.compile("^DM:\\d+:\\d+$"); // DM 패턴
+    private final CompaniesRepository companiesRepo;
 
     /* 방 생성 */
     @Transactional
@@ -82,16 +83,12 @@ public Long joinRoom(Long roomId) {
 
     // ✅ 처음 들어온 사람에게만 '입장했습니다' 브로드캐스트
     if (isNew) {
-        String joinerName = userProfilesRepo.findByUserId(uid)
-                .map(UserProfiles::getName)
-                .orElse("알 수 없음");
-
-                
+        String joinerName = displayNameByUserId(uid);
 
         MessageDto dto = new MessageDto();
         dto.setId(null);
         dto.setSenderId(uid);
-        dto.setSenderName(joinerName);
+        dto.setSenderName(joinerName); //회사면 회사이름으로
         dto.setMessage(joinerName + " 님이 입장했습니다.");
         dto.setSentAt(LocalDateTime.now());
         dto.setSystem(true);
@@ -114,9 +111,7 @@ public Long joinRoom(Long roomId) {
     return members.stream()
             .map(m -> new MemberDto(
                     m.getUser().getId(),
-                    userProfilesRepo.findByUserId(m.getUser().getId())
-                            .map(UserProfiles::getName)
-                            .orElse("알 수 없음")
+                    displayName(m.getUser())  // 회사면 회사이름, 아니면 프로필 이름, 없으면 이메일
             ))
             .toList();
 }
@@ -126,18 +121,39 @@ public Long joinRoom(Long roomId) {
 public void leaveRoom(Long roomId) {
     Long uid = currentUser.idOrThrow();
 
-
-
+    
+    // 방 로드 (면접방 여부 판단/삭제용)
+    GroupChatRooms room = roomsRepo.findById(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("room not found: " + roomId));
+            
     // 나가기 이전에 이름 확보
-    String leaverName = userProfilesRepo.findByUserId(uid)
-            .map(UserProfiles::getName)
-            .orElse("알 수 없음");
+    String leaverName = displayNameByUserId(uid);
+
+    // ✅ 1:1 면접 전용 방이면, 누가 나가든 방을 즉시 삭제
+    if (isInterviewRoom(room)) {
+        // (선택) 남아있는 상대 클라이언트에 종료 브로드캐스트
+        MessageDto closed = new MessageDto();
+        closed.setSystem(true);
+        closed.setType("ROOM_CLOSED");
+        closed.setRoomId(roomId);
+        closed.setSenderId(uid);
+        closed.setSenderName(leaverName);
+        closed.setMessage(leaverName + " 님이 나가서 1:1 면접 채팅방이 종료되었습니다.");
+        closed.setSentAt(java.time.LocalDateTime.now());
+        messagingTemplate.convertAndSend("/topic/rooms/" + roomId, closed);
+
+        // 방/멤버/메시지 정리
+        messagesRepo.deleteByRoom_Id(roomId);
+        membersRepo.deleteByRoom_Id(roomId);
+        roomsRepo.delete(room);
+
+        // (선택) 전체 방 목록 업데이트 브로드캐스트
+        messagingTemplate.convertAndSend("/topic/rooms", exploreRooms());
+        return;
+    }
 
     // 멤버 삭제
     membersRepo.deleteByRoom_IdAndUserId(roomId, uid); // 주의: 메서드 시그니처 확인
-    
-
-
     
     // ✅ 저장 없이 즉시 브로드캐스트
     MessageDto dto = new MessageDto();
@@ -330,7 +346,7 @@ public InviteResDto inviteUser(InviteCreateDto req) {
     try {
         MessageDto notice = new MessageDto();
         notice.setSystem(true);
-        notice.setType("INVITE");
+        notice.setType("초대중");
         notice.setRoomId(room.getId());
         notice.setSenderId(inviterId);
         notice.setMessage("면접 초대가 도착했습니다.");
@@ -342,7 +358,9 @@ public InviteResDto inviteUser(InviteCreateDto req) {
             .roomId(room.getId())
             .inviterId(inviterId)
             .inviteeId(invitee.getId())
-            .status("PENDING")
+            .inviterName(displayName(inviter))          // 이름 불러오기 추가 기업
+            .inviteeName(displayName(invitee))          // 이름 불러오기 추가 개인
+            .status("대기중")
             .createdAt(room.getCreatedAt())
             .respondedAt(null)
             .build();
@@ -360,6 +378,9 @@ public InviteResDto acceptInvite(Long roomId) {
     Long inviterId = pair[0];
     Long inviteeId = pair[1];
 
+    String inviterName = displayNameByUserId(inviterId);
+    String inviteeName = displayNameByUserId(inviteeId);
+
     if (!inviteeId.equals(meId)) {
         throw new IllegalStateException("본인에게 온 초대가 아닙니다.");
     }
@@ -372,7 +393,9 @@ public InviteResDto acceptInvite(Long roomId) {
                 .roomId(room.getId())
                 .inviterId(inviterId)
                 .inviteeId(inviteeId)
-                .status("ACCEPTED")
+                .inviterName(inviterName)                   // 
+                .inviteeName(inviteeName)                   // 
+                .status("수락됨")
                 .createdAt(room.getCreatedAt())
                 .respondedAt(java.time.LocalDateTime.now())
                 .build();
@@ -404,11 +427,15 @@ public InviteResDto acceptInvite(Long roomId) {
     dto.setSentAt(java.time.LocalDateTime.now());
     messagingTemplate.convertAndSend("/topic/rooms/" + room.getId(), dto);
 
+    
+
     return InviteResDto.builder()
             .roomId(room.getId())
             .inviterId(inviterId)
             .inviteeId(inviteeId)
-            .status("ACCEPTED")
+            .inviterName(inviterName)                   // ✅
+            .inviteeName(inviteeName)                   // ✅          // ✅
+            .status("수락됨")
             .createdAt(room.getCreatedAt())
             .respondedAt(java.time.LocalDateTime.now())
             .build();
@@ -425,6 +452,9 @@ public InviteResDto declineInvite(Long roomId) {
     long[] pair = parseInviteRoomName(room.getRoomName());
     Long inviterId = pair[0];
     Long inviteeId = pair[1];
+
+        String inviterName = displayNameByUserId(inviterId);
+        String inviteeName = displayNameByUserId(inviteeId);
 
     if (!inviteeId.equals(meId)) {
         throw new IllegalStateException("본인에게 온 초대가 아닙니다.");
@@ -458,6 +488,8 @@ public InviteResDto declineInvite(Long roomId) {
             .roomId(roomId)
             .inviterId(inviterId)
             .inviteeId(inviteeId)
+            .inviterName(inviterName)                   // ✅
+            .inviteeName(inviteeName)                   // ✅
             .status("DECLINED")
             .createdAt(room.getCreatedAt())
             .respondedAt(java.time.LocalDateTime.now())
@@ -470,11 +502,15 @@ public List<InviteResDto> myPendingInvites() {
     return roomsRepo.findPendingInvitesForUser(meId).stream()
             .map(r -> {
                 long[] p = parseInviteRoomName(r.getRoomName());
+                Long inviterId = p[0];
+                Long inviteeId = p[1];
                 return InviteResDto.builder()
                         .roomId(r.getId())
                         .inviterId(p[0])
                         .inviteeId(p[1])
-                        .status("PENDING")
+                        .inviterName(displayNameByUserId(inviterId))
+                        .inviteeName(displayNameByUserId(inviteeId))
+                        .status("대기중")
                         .createdAt(r.getCreatedAt())
                         .respondedAt(null)
                         .build();
@@ -533,6 +569,44 @@ private boolean isInterviewRoom(GroupChatRooms room) {
     // return false;
 }
 
+//1대1 채팅방 제목 헬퍼
+private String computeDisplayTitle(GroupChatRooms room) {
+    String rn = room.getRoomName();
+    if (rn == null) return null;
+    rn = rn.strip();
+
+    Long me = tryCurrentUserId(); // null일 수도 있음(공개탐색 등)
+
+    // 1) 초대 대기방: INVITE:<inviterId>:<inviteeId>
+    if (INVITE_PATTERN.matcher(rn).matches()) {
+        long[] p = parseInviteRoomName(rn);
+        Long inviterId = p[0], inviteeId = p[1];
+        // 내 입장에서 "상대방"의 표시명을 제목으로
+        Long otherId = (me != null && me.equals(inviterId)) ? inviteeId : inviterId;
+        return displayNameByUserId(otherId); // 회사면 companies.name, 개인이면 userProfiles.name
+    }
+
+    // 2) 수락 후 DM:<a>:<b>
+    if (DM_PATTERN.matcher(rn).matches()) {
+        var members = membersRepo.findByRoom_Id(room.getId());
+        if (me == null) {
+            // 내 정보가 없으면 방 이름 그대로(혹은 첫 멤버 이름 등)
+            return members.stream().findFirst()
+                    .map(m -> displayName(m.getUser()))
+                    .orElse("1:1 채팅");
+        }
+        return members.stream()
+                .map(GroupChatMembers::getUser)
+                .filter(u -> !u.getId().equals(me))
+                .findFirst()
+                .map(this::displayName)
+                .orElse("1:1 채팅");
+    }
+
+    // 3) 일반 공개방은 원래 이름
+    return rn;
+}
+
 //1대1 채팅방 헬퍼
 private long[] parseInviteRoomName(String roomName) {
     if (roomName == null || !roomName.startsWith("INVITE:"))
@@ -562,6 +636,7 @@ private long[] parseInviteRoomName(String roomName) {
                 .roomName(room.getRoomName())
                 .createdBy(room.getCreatedBy().getId()) // Users → id 추출
                 .createdAt(room.getCreatedAt())
+                .displayTitle(computeDisplayTitle(room)) // 제목 계산
                 .memberCount(memberCnt)
                 .isOwner(isOwner)
                 .lastMessage(lastOpt.map(GroupChatMessages::getMessage).orElse(null))
@@ -570,8 +645,7 @@ private long[] parseInviteRoomName(String roomName) {
     }
 
     private MessageDto toMessageDto(GroupChatMessages m, Long currentUid) {
-        String senderName = userProfilesRepo.findByUserId(m.getSender().getId())
-                .map(p -> p.getName()).orElse("알 수 없음");
+        String senderName = displayName(m.getSender());
         boolean mine = (currentUid != null && currentUid.equals(m.getSender().getId()));
 
         return MessageDto.builder()
@@ -590,7 +664,26 @@ private long[] parseInviteRoomName(String roomName) {
         try { return currentUser.idOrThrow(); } catch (Exception e) { return null; }
     }
 
-   
+   // 회사면 companies.name, 아니면 userProfiles.name, 없으면 이메일/기본값 헬퍼
+    private String displayName(Users user) {
+        if (user == null) return "알 수 없음";
+        if (user.getUserType() == boot.data.type.UserType.COMPANY) {
+            return companiesRepo.findTopByOwner_Id(user.getId())
+                    .map(boot.data.entity.Companies::getName)
+                    .orElseGet(() -> userProfilesRepo.findByUserId(user.getId())
+                            .map(UserProfiles::getName)
+                            .orElse(user.getEmail() != null ? user.getEmail() : "알 수 없음"));
+        }
+        return userProfilesRepo.findByUserId(user.getId())
+                .map(UserProfiles::getName)
+                .orElse("알 수 없음");
+    }
+
+    private String displayNameByUserId(Long uid) {
+        return usersRepo.findById(uid)
+                .map(this::displayName)
+                .orElse("알 수 없음");
+    }
     
 
     

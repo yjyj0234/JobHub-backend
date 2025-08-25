@@ -28,4 +28,7 @@ public interface CompaniesRepository extends JpaRepository<Companies, Long> {
     // 업자번호 중복 체크 (자신 제외)
     @Query("SELECT COUNT(c) > 0 FROM Companies c WHERE c.businessNumber = :businessNumber AND c.id != :companyId")
     boolean existsByBusinessNumberExcludingId(@Param("businessNumber") String businessNumber, @Param("companyId") Long companyId);
+
+    // 회사 이름으로 회사 조회
+    Optional<Companies> findTopByOwner_Id(Long ownerId);
 }

@@ -25,4 +25,7 @@ public class RoomResDto {
 
     @JsonProperty("isOwner")
     private boolean isOwner;
+
+    // 🔥 추가: UI에 보여줄 제목(회사명/상대 이름 등)
+    private String displayTitle;
 }

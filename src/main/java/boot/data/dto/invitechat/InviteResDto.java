@@ -18,4 +18,7 @@ public class InviteResDto {
     private String status;            // PENDING / ACCEPTED / DECLINED (DECLINED은 즉시 삭제되므로 응답 시점에만)
     private LocalDateTime createdAt;  // 방 생성 시각
     private LocalDateTime respondedAt; // 수락/거절 시각 (수락 시 now, 거절은 null로 둬도 OK)
+
+    private String inviterName;   // 회사명(기업) / 사용자명(개인)
+    private String inviteeName;
 }
