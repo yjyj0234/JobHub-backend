@@ -28,4 +28,13 @@ public interface CompaniesRepository extends JpaRepository<Companies, Long> {
     // 업자번호 중복 체크 (자신 제외)
     @Query("SELECT COUNT(c) > 0 FROM Companies c WHERE c.businessNumber = :businessNumber AND c.id != :companyId")
     boolean existsByBusinessNumberExcludingId(@Param("businessNumber") String businessNumber, @Param("companyId") Long companyId);
+
+    @Query("""
+  select c from Companies c
+  left join fetch c.industry
+  left join fetch c.companySize
+  left join fetch c.companyDetails
+  where c.id = :id
+""")
+Optional<Companies> findByIdWithAll(@Param("id") Long id);
 }
