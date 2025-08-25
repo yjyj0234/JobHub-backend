@@ -16,4 +16,6 @@ public interface CommunityPostsRepository extends JpaRepository<CommunityPosts, 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update CommunityPosts p set p.viewCount = coalesce(p.viewCount, 0) + 1 where p.id = :id")
     int increaseViewCount(@Param("id") Long id);
+
+
 }

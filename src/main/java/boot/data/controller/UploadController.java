@@ -2,6 +2,7 @@ package boot.data.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import boot.data.service.S3StorageService;
@@ -73,10 +74,10 @@ public Map<String, Object> uploadOne(@RequestParam("file") MultipartFile file,
     //    아래처럼 "/presign" 으로 두고, 상위 @RequestMapping("/api/media")와 합쳐 "/api/media/presign" 이 최종 경로가 되게 한다.
     @GetMapping("/files/presign")
     public Map<String, Object> presign(
-            @RequestParam String key,
+            @RequestParam("key") String key,
             @RequestParam(name = "minutes", defaultValue = "30") long minutes
     ) {
-        // TODO: 로그인/권한/소유권 검사(필요 시)
+        
         String url = storage.presignGetUrl(key, Duration.ofMinutes(minutes));
         return Map.of("key", key, "url", url, "expiresInSec", minutes * 60);
     }
@@ -97,9 +98,9 @@ public Map<String, Object> uploadOne(@RequestParam("file") MultipartFile file,
     }
 
     @GetMapping("/files/view")
-    public org.springframework.http.ResponseEntity<Void> view(@RequestParam String key) {
+    public ResponseEntity<Void> view(@RequestParam("key")  String key) {
         String url = storage.presignGetUrl(key, java.time.Duration.ofMinutes(15));
-        return org.springframework.http.ResponseEntity.status(302)
+        return ResponseEntity.status(302)
                 .location(java.net.URI.create(url))
                 .build();
 }

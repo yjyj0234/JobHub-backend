@@ -14,19 +14,18 @@ import lombok.Data;
 @Data
 @Table(name = "skills")
 public class Skills {
-	
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Comment("기술 ID")
-	private Integer id;
-	
-	@Column(nullable = false, length = 100, unique = true)
-	private String name;
-	
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Comment("기술 ID")
+    private Integer id;
+
+    @Column(nullable = false, length = 100, unique = true)
+    private String name;
+
     @Column(name = "category_id")
-	private Integer categoryId;
-    
+    private Integer categoryId;
+
     @Column(name = "is_verified", nullable = false)
     @Comment("검증 여부")
-    private boolean isVerified=false;
+    private boolean isVerified = false;
 }

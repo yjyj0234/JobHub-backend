@@ -23,9 +23,9 @@ public class JobListController {
         private final JobDetailService jobDetailService;
 
    //상세조회(뷰카운트+1 포함)
-   @GetMapping("/{id}")
-  public ResponseEntity<JobDetailResponseDto> getJob(@PathVariable Long id) {
+  @GetMapping("/{id}")
+  public ResponseEntity<JobDetailResponseDto> getJob(@PathVariable("id") Long id) {
         return ResponseEntity.ok(jobDetailService.getDetail(id));
     }
-   
+  
 }
