@@ -44,10 +44,29 @@ public class JobSearchService {
      * 검색 조건에 따라 적절한 Repository 메서드 호출
      */
     public Page<JobSearchResponseDto> search(JobSearchRequestDto request) {
-        log.info("검색 요청: keyword={}, regions={}, categories={}", 
-                request.getKeyword(), request.getRegionIds(), request.getCategoryIds());
+        log.info("검색 요청 받음: {}", request);
         
-        // 페이징 설정 (정렬 기준 포함)
+        // ✅ NULL 체크를 맨 앞으로 이동 (PageRequest 생성 전에!)
+        if (request.getPage() == null) {
+            request.setPage(0);
+        }
+        if (request.getSize() == null) {
+            request.setSize(20);
+        }
+        if (request.getSortBy() == null || request.getSortBy().isEmpty()) {
+            request.setSortBy("latest");
+        }
+        if (request.getRegionIds() == null) {
+            request.setRegionIds(new ArrayList<>());
+        }
+        if (request.getCategoryIds() == null) {
+            request.setCategoryIds(new ArrayList<>());
+        }
+        
+        log.info("정규화 후: page={}, size={}, sortBy={}", 
+            request.getPage(), request.getSize(), request.getSortBy());
+        
+        // 이제 안전하게 PageRequest 생성
         PageRequest pageRequest = PageRequest.of(
             request.getPage(), 
             request.getSize(),
@@ -57,12 +76,13 @@ public class JobSearchService {
         // 검색 조건 정규화
         String keyword = (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
                         ? request.getKeyword().trim() : null;
-        List<Integer> regionIds = (request.getRegionIds() != null && !request.getRegionIds().isEmpty()) 
-                                 ? request.getRegionIds() : null;
-        List<Integer> categoryIds = (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) 
+        List<Integer> regionIds = (!request.getRegionIds().isEmpty()) 
+                                ? request.getRegionIds() : null;
+        List<Integer> categoryIds = (!request.getCategoryIds().isEmpty()) 
                                    ? request.getCategoryIds() : null;
         
-        log.info("정규화된 조건: keyword='{}', regionIds={}, categoryIds={}", keyword, regionIds, categoryIds);
+        log.info("검색 조건: keyword='{}', regionIds={}, categoryIds={}", 
+            keyword, regionIds, categoryIds);
         
         Page<JobPostings> result;
         
@@ -115,7 +135,7 @@ public class JobSearchService {
             result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
             updateSearchKeyword(keyword);
         }
-
+        
         // 마감일이 지난 공고 상태 업데이트
         result.getContent().forEach(this::checkAndUpdateExpiredStatus);
         
@@ -133,6 +153,7 @@ public class JobSearchService {
     
         return result.map(this::convertToDto);
     }
+    
     @Transactional
     private void checkAndUpdateExpiredStatus(JobPostings posting) {
     // OPEN 상태이고, DEADLINE 타입이며, 마감일이 지난 경우
@@ -181,6 +202,33 @@ public class JobSearchService {
         if (entity.getCompany() != null && entity.getCompany().getName() != null) {
             companyName = entity.getCompany().getName();
         }
+        // ✅ JobPostingConditions 데이터 추출
+    String experienceLevel = null;
+    String educationLevel = null;
+    String employmentType = null;
+    String salaryType = null;
+    Integer minSalary = null;
+    Integer maxSalary = null;
+    Short minExperienceYears = null;
+    Short maxExperienceYears = null;
+    
+    // JobPostingConditions 안전하게 접근
+    if (entity.getJobPostingConditions() != null) {
+        JobPostingConditions conditions = entity.getJobPostingConditions();
+        
+        experienceLevel = conditions.getExperienceLevel() != null ?
+            conditions.getExperienceLevel().name() : null;
+        educationLevel = conditions.getEducationLevel() != null ?
+            conditions.getEducationLevel().name() : null;
+        employmentType = conditions.getEmploymentType() != null ?
+            conditions.getEmploymentType().name() : null;
+        salaryType = conditions.getSalaryType() != null ?
+            conditions.getSalaryType().name() : null;
+        minSalary = conditions.getMinSalary();
+        maxSalary = conditions.getMaxSalary();
+        minExperienceYears = conditions.getMinExperienceYears();
+        maxExperienceYears = conditions.getMaxExperienceYears();
+    }
         
         return JobSearchResponseDto.builder()
             .id(entity.getId())
@@ -197,7 +245,18 @@ public class JobSearchService {
             .status(entity.getStatus() != null ? entity.getStatus().name() : "OPEN")
             .isRemote(entity.isRemote())
             .createdAt(entity.getCreatedAt())
+            .experienceLevel(experienceLevel)
+            .educationLevel(educationLevel)
+            .employmentType(employmentType)
+            .salaryType(salaryType)
+            .minSalary(minSalary)
+            .maxSalary(maxSalary)
+            .minExperienceYears(minExperienceYears)
+            .maxExperienceYears(maxExperienceYears)
             .build();
+
+
+
     }
     
     /**

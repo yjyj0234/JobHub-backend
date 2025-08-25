@@ -24,4 +24,15 @@ public class JobSearchResponseDto {
     private boolean isRemote;
     private LocalDateTime createdAt;
     private String status; 
+
+     // ✅ 추가할 필드들 (JobPostingConditions에서 가져올 데이터)
+     private String experienceLevel;    // 경력 레벨 (ENTRY, JUNIOR, MID 등)
+     private String educationLevel;      // 학력 (ANY, HIGH_SCHOOL, COLLEGE 등)
+     private String employmentType;      // 고용형태 (FULLTIME, CONTRACT 등)
+     private String salaryType;          // 급여 타입 (FIXED, NEGOTIABLE 등)
+     private Integer minSalary;          // 최소 급여
+     private Integer maxSalary;          // 최대 급여
+     private Short minExperienceYears;  // 최소 경력 년수
+     private Short maxExperienceYears;  // 최대 경력 년수
+
 }
