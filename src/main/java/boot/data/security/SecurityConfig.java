@@ -48,12 +48,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // 0) 프리플라이트
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
+             
                 // 1) 공개 엔드포인트
                 .requestMatchers(
                     "/auth/login", "/auth/register", "/auth/refresh",
                     "/public/**", "/docs/**", "/swagger-ui/**", "/v3/api-docs/**",
-                    "/ws/**", "/community/**", "/group-chat/**","/api/home/**","/api/public/**"
+                    "/ws/**", "/community/**", "/group-chat/**","/api/home/**","/api/proofread","/api/public/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET,
                     "/api/search/**",
