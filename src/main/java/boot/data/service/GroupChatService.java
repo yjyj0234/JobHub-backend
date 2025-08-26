@@ -433,8 +433,8 @@ public InviteResDto acceptInvite(Long roomId) {
             .roomId(room.getId())
             .inviterId(inviterId)
             .inviteeId(inviteeId)
-            .inviterName(inviterName)                   // ✅
-            .inviteeName(inviteeName)                   // ✅          // ✅
+            .inviterName(inviterName)                   // 
+            .inviteeName(inviteeName)                   // 이름 불러오기 추가
             .status("수락됨")
             .createdAt(room.getCreatedAt())
             .respondedAt(java.time.LocalDateTime.now())
