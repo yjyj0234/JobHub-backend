@@ -68,7 +68,7 @@ public class ApplicationController  {
     @PreAuthorize("hasAnyAuthority('COMPANY','ADMIN')")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ApplicationResponse>> listByPostingId(
-            @RequestParam Long postingId,
+            @RequestParam("postingId") Long postingId,
             @AuthenticationPrincipal AuthUser me) {
     
         List<ApplicationResponse> apps = applicationService.findByPostingIdForCompany(me.id(), postingId);
@@ -80,7 +80,7 @@ public class ApplicationController  {
     @PreAuthorize("hasAnyAuthority('COMPANY','ADMIN')")
     @PatchMapping(value = "/{id}/view")
     public ResponseEntity<Void> markViewed(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @AuthenticationPrincipal AuthUser me) {
         applicationService.markViewedByCompany(me.id(), id);
         return ResponseEntity.noContent().build();
@@ -90,7 +90,7 @@ public class ApplicationController  {
     @PreAuthorize("hasAnyAuthority('COMPANY','ADMIN')")
     @PatchMapping(value = "/{id}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> changeStatus(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal AuthUser me) {
         String status = body != null ? body.get("status") : null;

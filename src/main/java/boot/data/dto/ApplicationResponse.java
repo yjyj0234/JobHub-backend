@@ -4,6 +4,7 @@ package boot.data.dto;
 import java.sql.Timestamp;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import boot.data.entity.Applications;
 import boot.data.type.ApplicationStatus;
@@ -22,17 +23,27 @@ public class ApplicationResponse {
     private ApplicationStatus status;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private Timestamp appliedAt;
-    private Timestamp viewdAt;
 
-    public static ApplicationResponse from(Applications a){
+     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonProperty("viewedAt")
+    private Timestamp viewedAt;
+
+  // ✅ 하위 정보 추가
+    private String applicantName;
+    private String applicantEmail;
+    private String resumeTitle;
+    private String resumeUrl;      // 또는 resumeFileKey
+
+   public static ApplicationResponse from(Applications a) {
         return ApplicationResponse.builder()
-               .id(a.getId())
-               .postingId(a.getJobPosting() != null ? a.getJobPosting().getId() : null)
-                .resumeId(a.getResume() != null ? a.getResume().getId() : null)
-                .userId(a.getUser() != null ? a.getUser().getId() : null)
-                .status(a.getStatus())
-                .appliedAt(a.getAppliedAt())
-                .viewdAt(a.getViewedAt())
-                .build();
+            .id(a.getId())
+            .postingId(a.getJobPosting() != null ? a.getJobPosting().getId() : null)
+            .resumeId(a.getResume() != null ? a.getResume().getId() : null)
+            .userId(a.getUser() != null ? a.getUser().getId() : null)
+            .status(a.getStatus())
+            .appliedAt(a.getAppliedAt())
+            .viewedAt(a.getViewedAt())
+            .build();
     }
+
 }

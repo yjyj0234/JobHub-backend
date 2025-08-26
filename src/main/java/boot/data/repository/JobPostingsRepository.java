@@ -68,6 +68,15 @@ public interface JobPostingsRepository extends JpaRepository<JobPostings, Long>{
 // 회사와 상태로 조회
 List<JobPostings> findByCompanyIdAndStatusOrderByCreatedAtDesc(Long companyId, PostingStatus status);
 
+
+@Query("""
+   select jp
+   from JobPostings jp
+   join fetch jp.company c
+   left join fetch c.owner
+   where jp.id = :id
+""")
+Optional<JobPostings> findByIdWithCompanyOwner(@Param("id") Long id);
 // 마감일이 지난 OPEN 상태 공고 조회
     @Query("""
         SELECT jp FROM JobPostings jp 
