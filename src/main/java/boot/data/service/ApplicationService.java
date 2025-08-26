@@ -136,14 +136,32 @@ public class ApplicationService {
             throw new AccessDeniedException("해당 회사의 공고가 아닙니다.");
         }
     }
-    @Transactional(readOnly = true)
+   @Transactional(readOnly = true)
     public List<ApplicationResponse> findByPostingIdForCompany(Long companyUserId, Long postingId) {
-        JobPostings posting = jobPostingsRepository.findById(postingId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공고가 존재하지 않습니다."));
-        assertOwnedByCompanyUser(posting, companyUserId);
-    
-        List<Applications> apps = applicationsRepository.findAllWithUserAndResumeByPostingId(postingId);
-        return apps.stream().map(ApplicationResponse::from).toList();
-    }
 
+       // 1) 공고 + 회사 소유자 로딩 후 소유권 검증
+       var posting = jobPostingsRepository.findByIdWithCompanyOwner(postingId)
+           .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "공고가 존재하지 않습니다."));
+       assertOwnedByCompanyUser(posting, companyUserId);
+
+       // 2) 조인 결과 한번에 조회
+       var rows = applicationsRepository.findListRowsByPostingId(postingId);
+
+        return rows.stream().map(r ->
+            ApplicationResponse.builder()
+                .id(r.getId())
+                .postingId(r.getPostingId())
+                .resumeId(r.getResumeId())
+                .userId(r.getUserId())
+                .status(ApplicationStatus.valueOf(r.getStatus()))
+                .appliedAt(r.getAppliedAt())
+                .viewedAt(r.getViewedAt())
+                .applicantName(r.getApplicantName())
+                .applicantEmail(r.getApplicantEmail())
+                .resumeTitle(r.getResumeTitle())
+                .resumeUrl(r.getResumePortfolioUrl()) // 포트폴리오 URL이 있으면 사용
+                .build()
+        ).toList();
+    }
+ 
 }
