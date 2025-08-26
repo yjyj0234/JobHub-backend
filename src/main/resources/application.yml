@@ -35,7 +35,21 @@ spring:
   profiles:
     include:
       secret # 민감정보 secret 파일
-      #jwt
+
+# Actuator 설정 (헬스체크용)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: never
+  security:
+    enabled: false
+
+#jwt
 jwt:
   secret: 123456789012345678901234567890123456789
   expiration: 86400000 # 1 day in milliseconds

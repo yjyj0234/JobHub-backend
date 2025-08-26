@@ -1,0 +1,31 @@
+# Git 관련
+.git
+.gitignore
+.gitattributes
+
+# IDE 관련
+.vscode
+.idea
+.settings
+.metadata
+*.iml
+*.ipr
+*.iws
+
+# 빌드 산출물
+build/
+.gradle/
+bin/
+
+# 로그 파일
+*.log
+
+# OS 관련
+.DS_Store
+Thumbs.db
+
+# 기타
+README.md
+Dockerfile
+.dockerignore
+package-lock.json
