@@ -44,7 +44,7 @@ public class ResumePortfolioService {
     }
 
     public List<ResumePortfolioDto> list(Long resumeId) {
-        loadMyResume(resumeId); // 권한 체크
+        //loadMyResume(resumeId); // 권한 체크
         return portfoliosRepo.findByResumeIdOrderByIdAsc(resumeId)
                 .stream().map(this::toDto).toList();
     }

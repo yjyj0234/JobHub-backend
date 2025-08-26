@@ -35,8 +35,8 @@ public class ResumeAwardsService {
 
     @Transactional(readOnly = true)
     public List<ResumeAwardResponse> listByResumeId(Long resumeId) {
-        Resumes resume = assertResumeOwner(resumeId);
-        return awardsRepo.findAllByResume_IdOrderByIdDesc(resume.getId())
+        //Resumes resume = assertResumeOwner(resumeId);
+        return awardsRepo.findAllByResume_IdOrderByIdDesc(resumeId)
                 .stream()
                 .map(this::toResponse)
                 .toList();

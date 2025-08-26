@@ -41,7 +41,7 @@ public class ResumeLanguageService {
 
     // 목록
     public List<ResumeLanguageDto> list(Long resumeId) {
-        loadMyResume(resumeId); // 권한 체크만
+        //loadMyResume(resumeId); // 권한 체크만
         return languagesRepo.findByResumeIdOrderByIdAsc(resumeId)
                 .stream().map(this::toDto).toList();
     }

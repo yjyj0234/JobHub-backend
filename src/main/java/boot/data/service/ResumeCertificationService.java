@@ -39,7 +39,7 @@ public class ResumeCertificationService {
 
     @Transactional(readOnly = true)
     public List<ResumeCertificationResponse> list(Long resumeId, Long currentUserId) {
-        getOwnedResumeOrThrow(resumeId, currentUserId);
+        //getOwnedResumeOrThrow(resumeId, currentUserId);
 
         return resumeCertificationsRepository.findByResume_IdOrderByIdDesc(resumeId)
                 .stream()
