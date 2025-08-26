@@ -51,7 +51,7 @@ public class SecurityConfig {
              
                 // 1) 공개 엔드포인트
                 .requestMatchers(
-                    "/auth/login", "/auth/register", "/auth/refresh",
+                    "/api/auth/login", "/api/auth/register", "/api/auth/refresh",
                     "/public/**", "/docs/**", "/swagger-ui/**", "/v3/api-docs/**",
                     "/ws/**", "/community/**", "/group-chat/**","/api/home/**","/api/proofread","/api/public/**",
                     "/actuator/health" // Docker 헬스체크용
@@ -120,7 +120,13 @@ public class SecurityConfig {
             "http://127.0.0.1:5173",
             "http://localhost:3000",
             "http://127.0.0.1:3000",
-            "http://192.168.10.147:3000"
+            "http://192.168.10.147:3000",
+            "http://3.35.136.37", 
+            "http://3.35.136.37:3000",
+            "http://3.35.136.37:5173",
+            "http://3.39.250.64",
+            "http://3.39.250.64:3000",
+            "http://3.39.250.64:5173"
         ));
         c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         c.setAllowedHeaders(List.of("*"));

@@ -39,6 +39,23 @@ docker restart jobhub-app
 ./quick-deploy.sh
 ```
 
+#### 문제: "API 404 Not Found - 프론트엔드 연동"
+```javascript
+// ❌ 잘못된 프론트엔드 API 설정
+const API_BASE_URL = "http://3.35.136.37";        // 포트 누락
+const loginUrl = "/auth/login";                    // api 접두사 누락
+
+// ✅ 올바른 프론트엔드 API 설정
+const API_BASE_URL = "http://3.35.136.37:8080";   // 포트 8080 추가
+const loginUrl = "/api/auth/login";                // api 접두사 추가
+
+// 최종 API 엔드포인트들:
+// - 로그인: http://3.35.136.37:8080/api/auth/login
+// - 회원가입: http://3.35.136.37:8080/api/auth/register  
+// - 이력서: http://3.35.136.37:8080/api/resumes
+// - 모든 API: http://3.35.136.37:8080/api/*
+```
+
 ### 3. 메모리 부족 문제
 
 #### 문제: "OutOfMemoryError"
