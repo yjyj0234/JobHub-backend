@@ -1,12 +1,12 @@
 package boot.data.dto;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@NoArgsConstructor
+@Getter
+@Setter
 public class FaqCreateRequest {
     private String category;
-    private String question;
-    private String answer;
+    private String title;
+    private String content;
 }

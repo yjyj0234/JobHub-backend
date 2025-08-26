@@ -1,22 +1,22 @@
+// JobHub-backend/src/main/java/boot/data/service/FaqService.java
+
 package boot.data.service;
 
 import boot.data.dto.FaqCreateRequest;
 import boot.data.dto.FaqDto;
 import boot.data.entity.Faqs;
 import boot.data.repository.FaqRepository;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class FaqService {
 
-    private final FaqRepository faqRepository;
+    @Autowired
+    private FaqRepository faqRepository;
 
     public List<FaqDto> getAllFaqs() {
         return faqRepository.findAll().stream()
@@ -24,35 +24,38 @@ public class FaqService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public FaqDto createFaq(FaqCreateRequest request) {
-        Faqs faq = new Faqs();
-        faq.setCategory(request.getCategory());
-        faq.setQuestion(request.getQuestion());
-        faq.setAnswer(request.getAnswer());
+    public FaqDto createFaq(FaqCreateRequest faqCreateRequest) {
+        // --- 강제 로그 추가 ---
+        System.out.println("LOG: FaqService -> createFaq() 호출됨");
+        // --------------------
 
-        Faqs savedFaq = faqRepository.saveAndFlush(faq);
+        Faqs newFaqEntity = new Faqs();
+        newFaqEntity.setCategory(faqCreateRequest.getCategory());
+        newFaqEntity.setTitle(faqCreateRequest.getTitle());
+        newFaqEntity.setContent(faqCreateRequest.getContent());
+
+        System.out.println("LOG: DB에 저장할 Faqs 엔티티 객체 생성 완료.");
+        System.out.println("LOG: 이제 repository.save()를 호출하여 DB에 저장합니다.");
+
+        Faqs savedFaq = faqRepository.save(newFaqEntity);
+
+        System.out.println("LOG: DB 저장 성공! 저장된 ID: " + savedFaq.getId());
+
         return convertToDto(savedFaq);
     }
 
-    @Transactional
     public FaqDto updateFaq(Long id, FaqDto faqDto) {
-        Faqs faq = faqRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("FAQ not found with id: " + id));
-
-        faq.setCategory(faqDto.getCategory());
-        faq.setQuestion(faqDto.getQuestion());
-        faq.setAnswer(faqDto.getAnswer());
-
-        Faqs updatedFaq = faqRepository.saveAndFlush(faq);
-        return convertToDto(updatedFaq);
+        return faqRepository.findById(id)
+                .map(faq -> {
+                    faq.setCategory(faqDto.getCategory());
+                    faq.setTitle(faqDto.getTitle());
+                    faq.setContent(faqDto.getContent());
+                    return convertToDto(faqRepository.save(faq));
+                })
+                .orElse(null);
     }
 
-    @Transactional
     public void deleteFaq(Long id) {
-        if (!faqRepository.existsById(id)) {
-            throw new EntityNotFoundException("FAQ not found with id: " + id);
-        }
         faqRepository.deleteById(id);
     }
 
@@ -60,10 +63,8 @@ public class FaqService {
         return FaqDto.builder()
                 .id(faq.getId())
                 .category(faq.getCategory())
-                .question(faq.getQuestion())
-                .answer(faq.getAnswer())
-                .createdAt(faq.getCreatedAt())
-                .updatedAt(faq.getUpdatedAt())
+                .title(faq.getTitle())
+                .content(faq.getContent())
                 .build();
     }
 }
