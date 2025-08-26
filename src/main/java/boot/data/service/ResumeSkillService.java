@@ -40,7 +40,7 @@ public class ResumeSkillService {
 
     @Transactional(readOnly = true)
     public List<ResumeSkillResponse> list(Long resumeId, Long currentUserId) {
-        getOwnedResumeOrThrow(resumeId, currentUserId);
+        //getOwnedResumeOrThrow(resumeId, currentUserId);
         return resumeSkillsRepository.findByResume_Id(resumeId).stream()
                 .map(rs -> ResumeSkillResponse.builder()
                         .id(rs.getId()) // resume_skills PK

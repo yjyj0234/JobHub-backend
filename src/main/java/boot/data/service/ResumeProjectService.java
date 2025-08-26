@@ -60,7 +60,7 @@ public class ResumeProjectService {
     /* 목록 */
     @Transactional(readOnly = true)
     public List<ResumeProjectResponse> list(Long resumeId, Long currentUserId) {
-        getOwnedResumeOrThrow(resumeId, currentUserId);
+        //getOwnedResumeOrThrow(resumeId, currentUserId);
         return resumeProjectsRepository.findByResume_IdOrderByIdDesc(resumeId).stream()
             .map(p -> ResumeProjectResponse.builder()
                     .id(p.getId())
