@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,121 +39,170 @@ public class JobSearchService {
     private final SearchKeywordRepository searchKeywordRepository;
     private final RegionRepository regionRepository;
     private final JobCategoryRepository jobCategoryRepository;
+    private final JobPostingsRepository jobPostingsRepository;
 
     /**
      * 통합 검색 메서드
      * 검색 조건에 따라 적절한 Repository 메서드 호출
      */
-    public Page<JobSearchResponseDto> search(JobSearchRequestDto request) {
-        log.info("검색 요청 받음: {}", request);
-        
-        // ✅ NULL 체크를 맨 앞으로 이동 (PageRequest 생성 전에!)
-        if (request.getPage() == null) {
-            request.setPage(0);
-        }
-        if (request.getSize() == null) {
-            request.setSize(20);
-        }
-        if (request.getSortBy() == null || request.getSortBy().isEmpty()) {
-            request.setSortBy("latest");
-        }
-        if (request.getRegionIds() == null) {
-            request.setRegionIds(new ArrayList<>());
-        }
-        if (request.getCategoryIds() == null) {
-            request.setCategoryIds(new ArrayList<>());
-        }
-        
-        log.info("정규화 후: page={}, size={}, sortBy={}", 
-            request.getPage(), request.getSize(), request.getSortBy());
-        
-        // 이제 안전하게 PageRequest 생성
-        PageRequest pageRequest = PageRequest.of(
-            request.getPage(), 
-            request.getSize(),
-            Sort.by(Sort.Direction.DESC, getSortField(request.getSortBy()))
-        );
-        
-        // 검색 조건 정규화
-        String keyword = (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
-                        ? request.getKeyword().trim() : null;
-        List<Integer> regionIds = (!request.getRegionIds().isEmpty()) 
-                                ? request.getRegionIds() : null;
-        List<Integer> categoryIds = (!request.getCategoryIds().isEmpty()) 
-                                   ? request.getCategoryIds() : null;
-        
-        log.info("검색 조건: keyword='{}', regionIds={}, categoryIds={}", 
-            keyword, regionIds, categoryIds);
-        
-        Page<JobPostings> result;
-        
-        // 조건별 분기 처리
-        if (keyword == null && regionIds == null && categoryIds == null) {
-            // 전체 조회
-            log.info("전체 조회");
-            result = jobPostingSearchRepository.findAll(
-                PageRequest.of(request.getPage(), request.getSize(), 
-                Sort.by(Sort.Direction.DESC, "viewCount"))
-            );
-        } 
-        else if (keyword != null && regionIds == null && categoryIds == null) {
-            // 키워드만
-            log.info("키워드만 검색: {}", keyword);
-            result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
-            //updateSearchKeyword(keyword);
-        }
-        else if (keyword == null && regionIds != null && categoryIds == null) {
-            // 지역만
-            log.info("지역만 검색: {}", regionIds);
-            result = jobPostingSearchRepository.searchByRegions(regionIds, pageRequest);
-        }
-        else if (keyword == null && regionIds == null && categoryIds != null) {
-            // 직무만
-            log.info("직무만 검색: {}", categoryIds);
-            result = jobPostingSearchRepository.searchByCategories(categoryIds, pageRequest);
-        }
-        else if (keyword != null && regionIds != null && categoryIds == null) {
-            // 키워드 + 지역
-            log.info("키워드+지역 검색: keyword={}, regions={}", keyword, regionIds);
-            result = jobPostingSearchRepository.searchByKeywordAndRegions(keyword, regionIds, pageRequest);
-            updateSearchKeyword(keyword);
-        }
-        else if (keyword != null && regionIds == null && categoryIds != null) {
-            // 키워드 + 직무
-            log.info("키워드+직무 검색: keyword={}, categories={}", keyword, categoryIds);
-            result = jobPostingSearchRepository.searchByKeywordAndCategories(keyword, categoryIds, pageRequest);
-            updateSearchKeyword(keyword);
-        }
-        else if (keyword == null && regionIds != null && categoryIds != null) {
-            // 지역 + 직무
-            log.info("지역+직무 검색: regions={}, categories={}", regionIds, categoryIds);
-            result = jobPostingSearchRepository.searchByRegionsAndCategories(regionIds, categoryIds, pageRequest);
-        }
-        else {
-            // 키워드 + 지역 + 직무 (전체 조합)
-            log.info("전체 조합 검색: keyword={}, regions={}, categories={}", keyword, regionIds, categoryIds);
-            // 임시로 키워드만 검색 처리 (나중에 개선)
-            result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
-            updateSearchKeyword(keyword);
-        }
-        
-        // 마감일이 지난 공고 상태 업데이트
-        result.getContent().forEach(this::checkAndUpdateExpiredStatus);
-        
-        log.info("검색 결과: {} 건", result.getTotalElements());
-
-        List<JobPostings> filteredList = result.getContent().stream()
-        .filter(posting -> posting.getStatus() != PostingStatus.DRAFT)
-        .collect(Collectors.toList());
+   public Page<JobSearchResponseDto> search(JobSearchRequestDto request) {
+    log.info("검색 요청 받음: {}", request);
     
-        Page<JobPostings> filteredResult = new PageImpl<>(
-        filteredList, 
-        result.getPageable(), 
-        filteredList.size()
+    // NULL 체크 및 기본값 설정
+    if (request.getPage() == null) {
+        request.setPage(0);
+    }
+    if (request.getSize() == null) {
+        request.setSize(20);
+    }
+    if (request.getSortBy() == null || request.getSortBy().isEmpty()) {
+        request.setSortBy("latest");
+    }
+    if (request.getRegionIds() == null) {
+        request.setRegionIds(new ArrayList<>());
+    }
+    if (request.getCategoryIds() == null) {
+        request.setCategoryIds(new ArrayList<>());
+    }
+    
+    log.info("정규화 후: page={}, size={}, sortBy={}", 
+        request.getPage(), request.getSize(), request.getSortBy());
+    
+    // PageRequest 생성
+    PageRequest pageRequest = PageRequest.of(
+        request.getPage(), 
+        request.getSize(),
+        Sort.by(Sort.Direction.DESC, getSortField(request.getSortBy()))
     );
     
-        return result.map(this::convertToDto);
+    // 검색 조건 정규화
+    String keyword = (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) 
+                    ? request.getKeyword().trim() : null;
+    List<Integer> regionIds = (!request.getRegionIds().isEmpty()) 
+                            ? request.getRegionIds() : null;
+    List<Integer> categoryIds = (!request.getCategoryIds().isEmpty()) 
+                               ? request.getCategoryIds() : null;
+    
+    log.info("검색 조건: keyword='{}', regionIds={}, categoryIds={}", 
+        keyword, regionIds, categoryIds);
+    
+    // ✅ 현재 시간 (마감일 체크용)
+    LocalDateTime now = LocalDateTime.now();
+    
+    Page<JobPostings> result;
+    
+    // 조건별 분기 처리 (기존 메서드명 그대로 사용)
+    if (keyword == null && regionIds == null && categoryIds == null) {
+        // 전체 조회
+        log.info("전체 조회");
+        result = jobPostingSearchRepository.findAll(
+            PageRequest.of(request.getPage(), request.getSize(), 
+            Sort.by(Sort.Direction.DESC, "viewCount"))
+        );
+    } 
+    else if (keyword != null && regionIds == null && categoryIds == null) {
+        // 키워드만
+        log.info("키워드만 검색: {}", keyword);
+        result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
+        updateSearchKeyword(keyword);
     }
+    else if (keyword == null && regionIds != null && categoryIds == null) {
+        // 지역만
+        log.info("지역만 검색: {}", regionIds);
+        result = jobPostingSearchRepository.searchByRegions(regionIds, pageRequest);
+    }
+    else if (keyword == null && regionIds == null && categoryIds != null) {
+        // 직무만
+        log.info("직무만 검색: {}", categoryIds);
+        result = jobPostingSearchRepository.searchByCategories(categoryIds, pageRequest);
+    }
+    else if (keyword != null && regionIds != null && categoryIds == null) {
+        // 키워드 + 지역
+        log.info("키워드+지역 검색: keyword={}, regions={}", keyword, regionIds);
+        result = jobPostingSearchRepository.searchByKeywordAndRegions(keyword, regionIds, pageRequest);
+        updateSearchKeyword(keyword);
+    }
+    else if (keyword != null && regionIds == null && categoryIds != null) {
+        // 키워드 + 직무
+        log.info("키워드+직무 검색: keyword={}, categories={}", keyword, categoryIds);
+        result = jobPostingSearchRepository.searchByKeywordAndCategories(keyword, categoryIds, pageRequest);
+        updateSearchKeyword(keyword);
+    }
+    else if (keyword == null && regionIds != null && categoryIds != null) {
+        // 지역 + 직무
+        log.info("지역+직무 검색: regions={}, categories={}", regionIds, categoryIds);
+        result = jobPostingSearchRepository.searchByRegionsAndCategories(regionIds, categoryIds, pageRequest);
+    }
+    else {
+        // 키워드 + 지역 + 직무 (전체 조합)
+        log.info("전체 조합 검색: keyword={}, regions={}, categories={}", keyword, regionIds, categoryIds);
+        // 임시로 키워드만 검색 처리
+        result = jobPostingSearchRepository.searchByKeyword(keyword, pageRequest);
+        updateSearchKeyword(keyword);
+    }
+    
+    // ✅ 마감일 체크 및 필터링
+    List<JobPostings> filteredList = result.getContent().stream()
+        .filter(posting -> {
+            // 1. DRAFT 제외 (임시저장은 안보임)
+            if (posting.getStatus() == PostingStatus.DRAFT) {
+                return false;
+            }
+            
+            // 2. CLOSED, EXPIRED 제외
+            if (posting.getStatus() == PostingStatus.CLOSED || 
+                posting.getStatus() == PostingStatus.EXPIRED) {
+                return false;
+            }
+            
+            // 3. DEADLINE 타입이면서 마감일 지난 경우 제외
+            if (posting.getStatus() == PostingStatus.OPEN &&
+                posting.getCloseType() == CloseType.DEADLINE && 
+                posting.getCloseDate() != null && 
+                posting.getCloseDate().isBefore(now)) {
+                
+                // 마감일 지난 공고 발견시 로그
+                log.debug("마감일 지난 공고 필터링: ID={}, closeDate={}", 
+                    posting.getId(), posting.getCloseDate());
+                return false;
+            }
+            
+            return true;
+        })
+        .collect(Collectors.toList());
+    
+    // 필터링된 결과로 새 Page 생성
+    Page<JobPostings> finalResult = new PageImpl<>(
+        filteredList, 
+        result.getPageable(), 
+        result.getTotalElements()
+    );
+    
+    log.info("검색 결과: 전체 {} 건 중 {} 건 표시 (마감/임시저장 제외)", 
+        result.getTotalElements(), filteredList.size());
+    
+    return finalResult.map(this::convertToDto);
+}
+
+// ✅ 비동기 상태 업데이트 (선택사항)
+@Async
+private void scheduleStatusUpdate(Long postingId) {
+    try {
+        jobPostingsRepository.findById(postingId).ifPresent(posting -> {
+            if (posting.getStatus() == PostingStatus.OPEN &&
+                posting.getCloseType() == CloseType.DEADLINE &&
+                posting.getCloseDate() != null &&
+                posting.getCloseDate().isBefore(LocalDateTime.now())) {
+                
+                posting.setStatus(PostingStatus.EXPIRED);
+                jobPostingsRepository.save(posting);
+                log.debug("공고 ID {} 상태를 EXPIRED로 비동기 업데이트", postingId);
+            }
+        });
+    } catch (Exception e) {
+        log.error("공고 상태 업데이트 실패: {}", postingId, e);
+    }
+}
     
     @Transactional
     private void checkAndUpdateExpiredStatus(JobPostings posting) {
@@ -369,7 +419,7 @@ public class JobSearchService {
     }
     
      /**
-     * ⭐ 지역 트리 구조 조회 (새로 추가)
+     * ⭐ 지역 트리 구조 조회 
      */
     public List<RegionTreeDto> getRegionTree() {
         // 1. 모든 지역 조회
@@ -417,7 +467,7 @@ public class JobSearchService {
     }
     
     /**
-     * ⭐ 직무 트리 구조 조회 (새로 추가)
+     * ⭐ 직무 트리 구조 조회
      */
     public List<JobCategoryTreeDto> getJobCategoryTree() {
         // 1. 모든 직무 카테고리 조회
