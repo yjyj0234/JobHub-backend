@@ -1,0 +1,92 @@
+package boot.data.controller;
+
+
+import boot.data.dto.CreateRoomReqDto;
+import boot.data.dto.MemberDto;
+import boot.data.dto.MessageDto;
+import boot.data.dto.SendMessageReqDto;
+import boot.data.dto.RoomResDto;
+import boot.data.service.GroupChatService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.web.bind.annotation.*;
+import java.security.Principal;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/group-chat")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true") // CORS
+public class GroupChatController {
+
+    private final GroupChatService service;
+
+    // 방 생성
+    @PostMapping("/rooms")
+    public RoomResDto createRoom(@RequestBody CreateRoomReqDto req) {
+        return service.createRoom(req);
+    }
+
+    // 내 방 목록
+    @GetMapping("/rooms/my")
+    public List<RoomResDto> myRooms() {
+        return service.myRooms();
+    }
+
+    //방 삭제
+    @DeleteMapping("/rooms/{roomId}")
+    public void deleteRoom(@PathVariable("roomId") Long roomId, Principal principal) {
+        service.deleteRoom(roomId, principal);
+    }
+
+    // 참가/나가기
+    @PostMapping("/rooms/{roomId}/join")
+    public Map<String, Object> join(@PathVariable("roomId") Long roomId) {
+    Long uid = service.joinRoom(roomId);
+    return Map.of("userId", uid);
+}
+
+    @DeleteMapping("/rooms/{roomId}/leave")
+    public void leave(@PathVariable("roomId") Long roomId) { service.leaveRoom(roomId); }
+
+    // 메시지 히스토리
+    @GetMapping("/rooms/{roomId}/messages")
+    public List<MessageDto> history(@PathVariable("roomId") Long roomId,
+                                    @RequestParam(name = "afterId", required = false) Long afterId) {
+        return service.getMessages(roomId, afterId);
+    }
+
+    //맴버 목록
+     @GetMapping("/rooms/{roomId}/members")
+    public List<MemberDto> getRoomMembers(@PathVariable("roomId") Long roomId) {
+        return service.getRoomMembers(roomId);
+    }
+
+    // 방 탐색
+    @GetMapping("/rooms/explore")
+public List<RoomResDto> exploreRooms() {
+    return service.exploreRooms();
+}
+
+//방 이름가져오기
+@GetMapping("/rooms/{roomId}")
+public RoomResDto getRoom(@PathVariable("roomId") Long roomId) {
+    return service.getRoom(roomId);
+}
+
+    /* ===== STOMP =====
+       클라가 /rooms/{roomId}/send 로 publish 하면 호출됨
+     */
+    @MessageMapping("/rooms/{roomId}/send")
+    public void send(@DestinationVariable("roomId") Long roomId, SendMessageReqDto req,
+    Principal principal) {
+  
+
+    // URL의 roomId를 최종 소스로 쓰고, 바디 message 사용
+    service.sendMessageFromPrincipal(roomId, req.getMessage(), principal);
+}
+
+}

@@ -1,49 +1,39 @@
 package boot.data.dto;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-import org.hibernate.annotations.Comment;
+import boot.data.entity.Users;
+import boot.data.type.UserType;
+import lombok.Builder;
+import lombok.Getter;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.Data;
-
-@Data
-@Table(name = "users")
-@Entity
+@Getter
+@Builder
 public class UserDto {
-	
-	   public enum UserType {
-	        JOBSEEKER,
-	        COMPANY_HR,
-	        ADMIN
-	    }
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
-	
-	@Column(name = "email")
-	private String email;
-	
-	
-	private String password_hash;
-	
-	@Enumerated(EnumType.STRING)
-	@Column(name ="user_type",nullable = false)
-	@Comment("사용자 유형(JOBSEEKER/COMPANY_HR/ADMIN)")
-	private UserType userType;
-	
-	private boolean is_Active=true;
-	
-	private Timestamp email_verfied_at;
-	private Timestamp last_login_at;
-	
-	private LocalDateTime created_At=LocalDateTime.now();
+    private Long id;
+    private String email;
+    private UserType userType;
+    private boolean isActive;
+    private LocalDateTime emailVerifiedAt;
+    private LocalDateTime lastLoginAt;
+    private LocalDateTime createdAt;
+
+    public static UserDto from(Users u) {
+        return UserDto.builder()
+            .id(u.getId())
+            .email(u.getEmail())
+            .userType(u.getUserType())
+            .isActive(u.isActive())
+            .emailVerifiedAt(toLdt(u.getEmailVerifiedAt()))
+            .lastLoginAt(toLdt(u.getLastLoginAt()))
+            .createdAt(toLdt(u.getCreatedAt()))
+            .build();
+    }
+
+    private static LocalDateTime toLdt(Object t) {
+        if (t == null) return null;
+        if (t instanceof java.sql.Timestamp ts) return ts.toLocalDateTime();
+        if (t instanceof LocalDateTime ldt) return ldt;
+        throw new IllegalArgumentException("Unsupported date type: " + t.getClass());
+    }
 }
