@@ -31,4 +31,13 @@ public interface CompaniesRepository extends JpaRepository<Companies, Long> {
 
     // 회사 이름으로 회사 조회
     Optional<Companies> findTopByOwner_Id(Long ownerId);
+    
+    @Query("""
+  select c from Companies c
+  left join fetch c.industry
+  left join fetch c.companySize
+  left join fetch c.companyDetails
+  where c.id = :id
+""")
+Optional<Companies> findByIdWithAll(@Param("id") Long id);
 }

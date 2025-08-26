@@ -27,7 +27,10 @@ public class RecommendationService {
     private final JobPostingLikesRepository jobPostingLikesRepository;
     private final CompanyBookmarksRepository companyBookmarksRepository;
     private final CurrentUser currentUser;
+    private final JobPostingsRepository jobPostingsRepository;
     
+
+     
     /**
      * 개인화된 채용공고 추천 (좋아요 기반)
      */
@@ -168,4 +171,6 @@ public class RecommendationService {
                 .map(jpl -> jpl.getRegion().getName())
                 .collect(Collectors.toList());
     }
+
+    
 }
