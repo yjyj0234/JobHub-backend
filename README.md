@@ -39,59 +39,7 @@ graph TD
   API --> SVC[Domain Services]
   SVC --> DB[(MySQL 8)]
   API -->|optional| S3[(Object Storage)]
-🗃️ ERD (요약)
-mermaid
-코드 복사
-erDiagram
-  USERS ||--|| USER_PROFILES : "has one"
-  USERS ||--o{ RESUMES : "owns"
 
-  RESUMES ||--o{ EDUCATIONS
-  RESUMES ||--o{ EXPERIENCES
-  RESUMES ||--o{ PROJECTS
-  RESUMES ||--o{ CERTIFICATIONS
-  RESUMES ||--o{ LANGUAGES
-  RESUMES ||--o{ PORTFOLIOS
-  RESUMES ||--o{ ACTIVITIES
-
-  RESUMES ||--o{ RESUME_SKILLS : "links"
-  SKILLS  ||--o{ RESUME_SKILLS : "linked by"
-
-  REGIONS ||--o{ USER_PROFILES : "location (optional)"
-
-  USERS {
-    bigint  id PK
-    varchar email UNIQUE
-    varchar password_hash
-    enum    user_type
-    tinyint is_active
-    datetime created_at
-    datetime updated_at
-  }
-
-  USER_PROFILES {
-    bigint  user_id PK/FK
-    varchar name
-    varchar headline
-    varchar phone
-    varchar profile_image_url
-    text    summary
-    int     birth_year
-    date    birth_date
-    bigint  location_region_id FK
-  }
-
-  RESUMES {
-    bigint id PK
-    bigint user_id FK
-    varchar title
-    tinyint is_primary
-    tinyint is_public
-    int     completion_rate
-    datetime created_at
-    datetime updated_at
-  }
-실제 필드/제약은 스키마에 맞춰 조정될 수 있습니다.
 
 📂 Project Structure
 bash
