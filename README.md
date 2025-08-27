@@ -35,12 +35,18 @@
 
 ```mermaid
 flowchart TD
-  Client["Web Client (React)"] -->|JWT| API["JobHub API (Spring Boot)"]
-  API --> SEC["Spring Security / JWT"]
-  API --> SVC["Domain Services"]
-  SVC --> DB[("MySQL 8")]
-  API --> S3["(Optional) Object Storage (S3)"]
+    client["Web Client (React)"]
+    api["JobHub API (Spring Boot)"]
+    sec["Spring Security / JWT"]
+    svc["Domain Services"]
+    db[("MySQL 8")]
+    s3["(Optional) Object Storage (S3)"]
 
+    client -->|JWT| api
+    api --> sec
+    api --> svc
+    svc --> db
+    api --> s3
 
 📂 Project Structure
 jobhub-backend/
@@ -58,7 +64,6 @@ jobhub-backend/
  │   ├─ application.yml
  │   └─ schema.sql / data.sql (옵션)
  └─ build.gradle
-
 
 🔌 API Overview (요약)
 Auth
