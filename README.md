@@ -33,13 +33,13 @@
 ## 🧭 Architecture
 
 ```mermaid
-graph TD
-  Client[Web Client (React)] -->|JWT| API[JobHub API (Spring Boot)]
-  API --> SEC[Spring Security / JWT]
-  API --> SVC[Domain Services]
-  SVC --> DB[(MySQL 8)]
-  API -->|optional| S3[(Object Storage)]
 
+flowchart TD
+  Client["Web Client (React)"] -->|JWT| API["JobHub API (Spring Boot)"]
+  API --> SEC["Spring Security / JWT"]
+  API --> SVC["Domain Services"]
+  SVC --> DB[("MySQL 8")]
+  API --> S3["(Optional) Object Storage (S3)"]
 
 📂 Project Structure
 bash
