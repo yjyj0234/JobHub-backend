@@ -126,7 +126,8 @@ public class SecurityConfig {
             "http://3.35.136.37:5173",
             "http://3.39.250.64",
             "http://3.39.250.64:3000",
-            "http://3.39.250.64:5173"
+            "http://3.39.250.64:5173",
+            "http://3.39.250.64:8080"
         ));
         c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         c.setAllowedHeaders(List.of("*"));
